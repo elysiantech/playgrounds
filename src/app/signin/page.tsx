@@ -1,28 +1,23 @@
 'use client'
 
 import Image from "next/image"
+import { useTheme } from 'next-themes'
 import { signIn } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Github, Mail } from 'lucide-react'
 
 export default function SignIn() {
+  const { theme } = useTheme()
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background">
       <div className="mb-8">
-        <Image
-          src="/logo-white-black.png"
-          alt="Logo"
+      <Image
+          src={theme === 'dark' ? '/logo-white-black.png' : '/logo-black-white.png'}
+          alt="Playgrounds Logo"
           width={64}
           height={64}
-          className="dark:hidden"
-        />
-        <Image
-          src="/logo-black-white.png"
-          alt="Logo"
-          width={64}
-          height={64}
-          className="hidden dark:block"
+          className="rounded-md"
         />
       </div>
       <Card className="w-[350px]">
