@@ -1,4 +1,4 @@
-import { Agent, Mission } from '@/components/types';
+import { Agent, Mission } from '@/lib/types';
 
 export const agents: Array<Agent> = [
     {
