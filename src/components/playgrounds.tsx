@@ -1,10 +1,11 @@
 'use client'
 
 import * as React from 'react'
-import { Moon, Sun, LogOut, Upload, X, Sparkles, RefreshCw, ArrowUpToLine, CuboidIcon as Cube, Info, Trash2, Download } from 'lucide-react'
+import { Moon, Sun, LogOut, Upload, X, Sparkles, Scale, Trash2, Download, RefreshCw, Bookmark, Share } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import Image from 'next/image'
 import { useSession, signOut } from "next-auth/react"
+import { useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -28,20 +29,52 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { toast } from '@/hooks/use-toast'
+
+interface ImageData {
+  url: string;
+  prompt: string;
+  negativePrompt: string;
+  creativity: number;
+  steps: number;
+  seed: string;
+  numberOfImages: number;
+}
 
 export function Playgrounds() {
   const { data: session } = useSession()
   const { setTheme, theme } = useTheme()
+  const searchParams = useSearchParams()
   const [prompt, setPrompt] = React.useState('')
   const [negativePrompt, setNegativePrompt] = React.useState('')
   const [creativity, setCreativity] = React.useState(50)
   const [steps, setSteps] = React.useState(50)
   const [seed, setSeed] = React.useState<'random' | 'fixed'>('random')
   const [fixedSeed, setFixedSeed] = React.useState('')
+  const [numberOfImages, setNumberOfImages] = React.useState(2)
   const [uploadedImage, setUploadedImage] = React.useState<string | null>(null)
-  const [generatedImages, setGeneratedImages] = React.useState<string[]>([])
-  const [selectedImage, setSelectedImage] = React.useState<string | null>(null)
+  const [generatedImages, setGeneratedImages] = React.useState<ImageData[]>([])
+  const [selectedImage, setSelectedImage] = React.useState<ImageData | null>(null)
   const [showTools, setShowTools] = React.useState(false)
+
+  React.useEffect(() => {
+    const promptParam = searchParams.get('prompt')
+    const negativePromptParam = searchParams.get('negativePrompt')
+    const creativityParam = searchParams.get('creativity')
+    const stepsParam = searchParams.get('steps')
+    const seedParam = searchParams.get('seed')
+    const numberOfImagesParam = searchParams.get('numberOfImages')
+
+    if (promptParam) setPrompt(promptParam)
+    if (negativePromptParam) setNegativePrompt(negativePromptParam)
+    if (creativityParam) setCreativity(parseInt(creativityParam))
+    if (stepsParam) setSteps(parseInt(stepsParam))
+    if (seedParam) {
+      setSeed('fixed')
+      setFixedSeed(seedParam)
+    }
+    if (numberOfImagesParam) setNumberOfImages(parseInt(numberOfImagesParam))
+  }, [searchParams])
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -54,27 +87,95 @@ export function Playgrounds() {
     }
   }
 
+  const clearUploadedImage = () => {
+    setUploadedImage(null)
+  }
+
   const enhancePrompt = () => {
     // Implement prompt enhancement logic here
     console.log('Enhancing prompt:', prompt)
   }
 
-  const generateImage = () => {
-    // Simulate image generation
-    const newImage = `/placeholder.svg?height=512&width=512&text=${encodeURIComponent(prompt)}`
-    // const newImage = `https://placehold.co/512x512/000000/FFF?text=image`;
-    setGeneratedImages(prev => [newImage, ...prev])
-    setSelectedImage(newImage)
-  }
+  const generateImage = async () => {
+    // Placeholder SVG data URL
+    const placeholderSvg = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='512' height='512' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' font-size='24' text-anchor='middle' dy='.3em' fill='%23999'%3EGenerating...%3C/text%3E%3C/svg%3E`;
+
+    const newImages: ImageData[] = Array(numberOfImages).fill(null).map(() => ({
+      url: placeholderSvg,
+      prompt,
+      negativePrompt,
+      creativity,
+      steps,
+      seed: seed === 'fixed' ? fixedSeed : 'random',
+      numberOfImages,
+    }));
+
+    setGeneratedImages(prev => [...newImages, ...prev]);
+    setSelectedImage(newImages[0]);
+
+    // Simulate API call delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Simulate receiving generated image URLs from the API
+    const updatedImages = newImages.map((image, index) => ({
+      ...image,
+      url: `/generated-image-${Date.now()}-${index}.png`,
+    }));
+
+    setGeneratedImages(prev => [...updatedImages, ...prev.slice(numberOfImages)]);
+    setSelectedImage(updatedImages[0]);
+  };
 
   const handleImageAction = (action: string) => {
-    console.log(`Performing ${action} on the image`)
-    // Implement the actual functionality for each action here
+    switch (action) {
+      case 'remix':
+        if (selectedImage) {
+          setPrompt(selectedImage.prompt)
+          setNegativePrompt(selectedImage.negativePrompt)
+          setCreativity(selectedImage.creativity)
+          setSteps(selectedImage.steps)
+          if (selectedImage.seed !== 'random') {
+            setSeed('fixed')
+            setFixedSeed(selectedImage.seed)
+          } else {
+            setSeed('random')
+          }
+          setNumberOfImages(selectedImage.numberOfImages)
+        }
+        break;
+      case 'delete':
+        if (selectedImage) {
+          setGeneratedImages(prev => prev.filter(img => img.url !== selectedImage.url))
+          setSelectedImage(null)
+        }
+        break;
+      case 'share':
+        if (selectedImage) {
+          const params = new URLSearchParams({
+            prompt: selectedImage.prompt,
+            negativePrompt: selectedImage.negativePrompt,
+            creativity: selectedImage.creativity.toString(),
+            steps: selectedImage.steps.toString(),
+            seed: selectedImage.seed,
+            numberOfImages: selectedImage.numberOfImages.toString(),
+          })
+          const url = `${window.location.origin}${window.location.pathname}?${params.toString()}`
+          navigator.clipboard.writeText(url)
+          toast({
+            title: "URL Copied",
+            description: "The share URL has been copied to your clipboard.",
+          })
+        }
+        break;
+      default:
+        console.log(`Performing ${action} on the image`)
+    }
   }
+
   const handleDownload = () => {
     if (selectedImage) {
       const link = document.createElement('a')
-      link.href = selectedImage
+      link.href = selectedImage.url
       link.download = 'generated-image.png'
       document.body.appendChild(link)
       link.click()
@@ -87,7 +188,7 @@ export function Playgrounds() {
       {/* Sidebar */}
       <aside className="w-64 border-r p-4 flex flex-col space-y-4">
         <Card className="w-full">
-          <CardContent className="p-4 flex flex-col items-center">
+          <CardContent className="p-4 flex flex-col items-center relative">
             <Label htmlFor="image-upload" className="cursor-pointer">
               {uploadedImage ? (
                 <Image
@@ -110,6 +211,16 @@ export function Playgrounds() {
               className="hidden"
               onChange={handleImageUpload}
             />
+            {uploadedImage && (
+              <Button
+                size="icon"
+                variant="ghost"
+                className="absolute top-2 right-2"
+                onClick={clearUploadedImage}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
             <span className="mt-2 text-sm font-medium">Image</span>
           </CardContent>
         </Card>
@@ -201,6 +312,20 @@ export function Playgrounds() {
           </AccordionItem>
         </Accordion>
 
+        <div className="space-y-2">
+          <Label>Number of images</Label>
+          <Slider
+            value={[numberOfImages]}
+            onValueChange={(values) => setNumberOfImages(values[0])}
+            min={1}
+            max={8}
+            step={1}
+          />
+          <div className="flex justify-between">
+            <span>{numberOfImages}</span>
+          </div>
+        </div>
+
         <Button className="w-full" onClick={generateImage}>
           <Sparkles className="mr-2 h-4 w-4" /> Generate
         </Button>
@@ -269,11 +394,12 @@ export function Playgrounds() {
             >
               {selectedImage ? (
                 <Image
-                  src={selectedImage}
+                  src={selectedImage.url}
                   alt="Generated image"
                   width={512}
                   height={512}
                   className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
+                  unoptimized={selectedImage.url.startsWith('data:')}
                 />
               ) : (
                 <div className="w-full h-full min-h-[300px] bg-muted rounded-lg flex items-center justify-center">
@@ -282,33 +408,33 @@ export function Playgrounds() {
               )}
               {showTools && selectedImage && (
                 <div className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm rounded-lg p-2 flex space-x-2">
-                <TooltipProvider>
-                  {[
-                    { icon: RefreshCw, label: 'Reimagine', action: 'reimagine' },
-                    { icon: ArrowUpToLine, label: 'Upscale', action: 'upscale' },
-                    { icon: Cube, label: 'Make 3D', action: 'make3d' },
-                    { icon: Info, label: 'Info', action: 'info' },
-                    { icon: Download, label: 'Download', action: 'download' },
-                    { icon: Trash2, label: 'Delete', action: 'delete' },
-                  ].map(({ icon: Icon, label, action }) => (
-                    <Tooltip key={action}>
-                      <TooltipTrigger asChild>
-                        <Button 
-                          size="icon" 
-                          variant="ghost" 
-                          onClick={() => action === 'download' ? handleDownload() : handleImageAction(action)}
-                        >
-                          <Icon className="h-4 w-4" />
-                          <span className="sr-only">{label}</span>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{label}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  ))}
-                </TooltipProvider>
-              </div>
+                  <TooltipProvider>
+                    {[
+                      { icon: RefreshCw, label: 'Remix', action: 'remix' },
+                      { icon: Scale, label: 'Upscale', action: 'upscale' },
+                      { icon: Bookmark, label: 'Bookmark', action: 'bookmark' },
+                      { icon: Share, label: 'Share', action: 'share' },
+                      { icon: Download, label: 'Download', action: 'download' },
+                      { icon: Trash2, label: 'Delete', action: 'delete' },
+                    ].map(({ icon: Icon, label, action }) => (
+                      <Tooltip key={action}>
+                        <TooltipTrigger asChild>
+                          <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            onClick={() => action === 'download' ? handleDownload() : handleImageAction(action)}
+                          >
+                            <Icon className="h-4 w-4" />
+                            <span className="sr-only">{label}</span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{label}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    ))}
+                  </TooltipProvider>
+                </div>
               )}
             </div>
           </div>
@@ -320,12 +446,13 @@ export function Playgrounds() {
                 {generatedImages.map((image, index) => (
                   <Image
                     key={index}
-                    src={image}
+                    src={image.url}
                     alt={`Generated image ${index + 1}`}
                     width={100}
                     height={100}
                     className="rounded-md cursor-pointer hover:opacity-80 transition-opacity"
                     onClick={() => setSelectedImage(image)}
+                    unoptimized={image.url.startsWith('data:')}
                   />
                 ))}
               </div>
