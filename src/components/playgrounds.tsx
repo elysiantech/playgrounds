@@ -30,6 +30,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { toast } from '@/hooks/use-toast'
+import { useAIPlayground } from "../hooks/useAIPlayground"
 
 interface ImageData {
   url: string;
@@ -37,7 +38,7 @@ interface ImageData {
   negativePrompt: string;
   creativity: number;
   steps: number;
-  seed: string;
+  seed: number;
   numberOfImages: number;
 }
 
@@ -52,10 +53,11 @@ export function Playgrounds() {
   const [seed, setSeed] = React.useState<'random' | 'fixed'>('random')
   const [fixedSeed, setFixedSeed] = React.useState('')
   const [numberOfImages, setNumberOfImages] = React.useState(2)
-  const [uploadedImage, setUploadedImage] = React.useState<string | null>(null)
+  const [refImage, setRefImage] = React.useState<string | null>(null)
   const [generatedImages, setGeneratedImages] = React.useState<ImageData[]>([])
   const [selectedImage, setSelectedImage] = React.useState<ImageData | null>(null)
   const [showTools, setShowTools] = React.useState(false)
+  const { enhancePrompt, generateImage, /*isLoading, error */} = useAIPlayground()
 
   React.useEffect(() => {
     const promptParam = searchParams.get('prompt')
@@ -81,50 +83,77 @@ export function Playgrounds() {
     if (file) {
       const reader = new FileReader()
       reader.onloadend = () => {
-        setUploadedImage(reader.result as string)
+        setRefImage(reader.result as string)
       }
       reader.readAsDataURL(file)
     }
   }
 
-  const clearUploadedImage = () => {
-    setUploadedImage(null)
+  const clearRefImage = () => {
+    setRefImage(null)
+  }
+  const handleEnhancePrompt = async () => {
+    try {
+      const enhancedPrompt = await enhancePrompt(prompt)
+      setPrompt(enhancedPrompt)
+    } catch (error) {
+      console.error('Error enhancing prompt:', error)
+    }
   }
 
-  const enhancePrompt = () => {
-    // Implement prompt enhancement logic here
-    console.log('Enhancing prompt:', prompt)
+  const handleGenerateImage = async () => {
+    try {
+      const newImages: ImageData[] = Array.from({ length: numberOfImages }, () => {
+        const uniqueSeed = seed === 'fixed' ? parseInt(fixedSeed) : Math.floor(Math.random() * 2 ** 32);
+        return {
+          url: `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='512' height='512' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' font-size='24' text-anchor='middle' dy='.3em' fill='%23999'%3EGenerating...%3C/text%3E%3C/svg%3E`,
+          prompt,
+          negativePrompt,
+          creativity,
+          steps,
+          seed: uniqueSeed,
+          numberOfImages,
+        };
+      });
+    
+      // Temporarily set placeholder images
+      setGeneratedImages(prev => [...newImages, ...prev]);
+      setSelectedImage(newImages[0]);
+  
+      // Generate images using the useAIPlayground hook
+      const generatedImages = await Promise.all(
+        newImages.map(image =>
+          generateImage({
+            prompt: image.prompt,
+            negativePrompt: image.negativePrompt,
+            creativity: image.creativity,
+            steps: image.steps,
+            seed: image.seed, // Use the seed from the corresponding newImage
+            refImage: refImage || undefined,
+            numberOfImages: 1, // Generate one image at a time
+          })
+        )
+      );
+  
+      // Update newImages with the generated URLs
+      const updatedImages = newImages.map((image, index) => ({
+        ...image,
+        url: generatedImages[index][0].url, // Assuming generateImage returns an array with at least one image
+      }));
+
+      // Update the state with the generated images
+      setGeneratedImages(prev => [...updatedImages, ...prev.slice(numberOfImages)]);
+      setSelectedImage(updatedImages[0]);
+    } catch (error) {
+      console.error('Error generating image:', error)
+      setGeneratedImages([]) // Set to empty array on error
+      toast({
+        title: "Error",
+        description: "Failed to generate images. Please try again.",
+        variant: "destructive",
+      })
+    }
   }
-
-  const generateImage = async () => {
-    // Placeholder SVG data URL
-    const placeholderSvg = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='512' height='512' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' font-size='24' text-anchor='middle' dy='.3em' fill='%23999'%3EGenerating...%3C/text%3E%3C/svg%3E`;
-
-    const newImages: ImageData[] = Array(numberOfImages).fill(null).map(() => ({
-      url: placeholderSvg,
-      prompt,
-      negativePrompt,
-      creativity,
-      steps,
-      seed: seed === 'fixed' ? fixedSeed : 'random',
-      numberOfImages,
-    }));
-
-    setGeneratedImages(prev => [...newImages, ...prev]);
-    setSelectedImage(newImages[0]);
-
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    // Simulate receiving generated image URLs from the API
-    const updatedImages = newImages.map((image, index) => ({
-      ...image,
-      url: `/generated-image-${Date.now()}-${index}.png`,
-    }));
-
-    setGeneratedImages(prev => [...updatedImages, ...prev.slice(numberOfImages)]);
-    setSelectedImage(updatedImages[0]);
-  };
 
   const handleImageAction = (action: string) => {
     switch (action) {
@@ -134,13 +163,9 @@ export function Playgrounds() {
           setNegativePrompt(selectedImage.negativePrompt)
           setCreativity(selectedImage.creativity)
           setSteps(selectedImage.steps)
-          if (selectedImage.seed !== 'random') {
-            setSeed('fixed')
-            setFixedSeed(selectedImage.seed)
-          } else {
-            setSeed('random')
-          }
-          setNumberOfImages(selectedImage.numberOfImages)
+          setSeed('fixed')
+          setFixedSeed(String(selectedImage.seed))
+          setNumberOfImages(1)
         }
         break;
       case 'delete':
@@ -156,8 +181,8 @@ export function Playgrounds() {
             negativePrompt: selectedImage.negativePrompt,
             creativity: selectedImage.creativity.toString(),
             steps: selectedImage.steps.toString(),
-            seed: selectedImage.seed,
-            numberOfImages: selectedImage.numberOfImages.toString(),
+            seed: String(selectedImage.seed),
+            numberOfImages: "1",//selectedImage.numberOfImages.toString(),
           })
           const url = `${window.location.origin}${window.location.pathname}?${params.toString()}`
           navigator.clipboard.writeText(url)
@@ -190,9 +215,9 @@ export function Playgrounds() {
         <Card className="w-full">
           <CardContent className="p-4 flex flex-col items-center relative">
             <Label htmlFor="image-upload" className="cursor-pointer">
-              {uploadedImage ? (
+              {refImage ? (
                 <Image
-                  src={uploadedImage}
+                  src={refImage}
                   alt="Uploaded"
                   width={100}
                   height={100}
@@ -211,12 +236,12 @@ export function Playgrounds() {
               className="hidden"
               onChange={handleImageUpload}
             />
-            {uploadedImage && (
+            {refImage && (
               <Button
                 size="icon"
                 variant="ghost"
                 className="absolute top-2 right-2"
-                onClick={clearUploadedImage}
+                onClick={clearRefImage}
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -246,7 +271,7 @@ export function Playgrounds() {
                 size="icon"
                 variant="ghost"
                 className="absolute bottom-2 right-2"
-                onClick={enhancePrompt}
+                onClick={handleEnhancePrompt}
               >
                 <Sparkles className="h-4 w-4" />
               </Button>
@@ -326,7 +351,7 @@ export function Playgrounds() {
           </div>
         </div>
 
-        <Button className="w-full" onClick={generateImage}>
+        <Button className="w-full" onClick={handleGenerateImage}>
           <Sparkles className="mr-2 h-4 w-4" /> Generate
         </Button>
       </aside>
