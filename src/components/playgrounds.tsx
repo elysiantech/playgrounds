@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Moon, Sun, LogOut, Upload, X, Sparkles, Scale, Trash2, Download, RefreshCw, Bookmark, Share } from 'lucide-react'
+import { Moon, Sun, LogOut, Upload, X, Sparkles, Scale, Trash2, Download, RefreshCw, Bookmark, Share, Menu } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import Image from 'next/image'
 import { useSession, signOut } from "next-auth/react"
@@ -57,7 +57,8 @@ export function Playgrounds() {
   const [generatedImages, setGeneratedImages] = React.useState<ImageData[]>([])
   const [selectedImage, setSelectedImage] = React.useState<ImageData | null>(null)
   const [showTools, setShowTools] = React.useState(false)
-  const { enhancePrompt, generateImage, /*isLoading, error */} = useAIPlayground()
+  const [isSidebarOpen, setIsSidebarOpen] = React.useState(false)
+  const { enhancePrompt, generateImage } = useAIPlayground()
 
   React.useEffect(() => {
     const promptParam = searchParams.get('prompt')
@@ -92,6 +93,7 @@ export function Playgrounds() {
   const clearRefImage = () => {
     setRefImage(null)
   }
+
   const handleEnhancePrompt = async () => {
     try {
       const enhancedPrompt = await enhancePrompt(prompt)
@@ -128,9 +130,9 @@ export function Playgrounds() {
             negativePrompt: image.negativePrompt,
             creativity: image.creativity,
             steps: image.steps,
-            seed: image.seed, // Use the seed from the corresponding newImage
+            seed: image.seed,
             refImage: refImage || undefined,
-            numberOfImages: 1, // Generate one image at a time
+            numberOfImages: 1,
           })
         )
       );
@@ -138,7 +140,7 @@ export function Playgrounds() {
       // Update newImages with the generated URLs
       const updatedImages = newImages.map((image, index) => ({
         ...image,
-        url: generatedImages[index][0].url, // Assuming generateImage returns an array with at least one image
+        url: generatedImages[index][0].url,
       }));
 
       // Update the state with the generated images
@@ -146,7 +148,7 @@ export function Playgrounds() {
       setSelectedImage(updatedImages[0]);
     } catch (error) {
       console.error('Error generating image:', error)
-      setGeneratedImages([]) // Set to empty array on error
+      setGeneratedImages([])
       toast({
         title: "Error",
         description: "Failed to generate images. Please try again.",
@@ -208,10 +210,67 @@ export function Playgrounds() {
     }
   }
 
+  const toggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen)
+  }
+
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex flex-col md:flex-row h-screen bg-background">
+      {/* Mobile header */}
+      <header className="md:hidden h-16 border-b flex items-center justify-between px-4">
+        <div className="flex items-center space-x-4">
+          <Button variant="ghost" size="icon" onClick={toggleSidebar}>
+            <Menu className="h-6 w-6" />
+          </Button>
+          <div className="w-8 h-8">
+            <Image
+              src={theme === 'dark' ? '/logo-white-black.png' : '/logo-black-white.png'}
+              alt="Playgrounds Logo"
+              width={32}
+              height={32}
+              className="rounded-md"
+            />
+          </div>
+          <h1 className="text-xl font-bold">Playgrounds</h1>
+        </div>
+        {session?.user && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={session.user.image || ''} alt={session.user.name || ''} />
+                  <AvatarFallback>{session.user.name?.charAt(0) || 'U'}</AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="end" forceMount>
+              <DropdownMenuItem className="flex items-center">
+                <Avatar className="mr-2 h-8 w-8">
+                  <AvatarImage src={session.user.image || ''} alt={session.user.name || ''} />
+                  <AvatarFallback>{session.user.name?.charAt(0) || 'U'}</AvatarFallback>
+                </Avatar>
+                <span>{session.user.email || ''}</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setTheme('light')}>
+                <Sun className="mr-2 h-4 w-4" />
+                <span>Light mode</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setTheme('dark')}>
+                <Moon className="mr-2 h-4 w-4" />
+                <span>Dark mode</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => signOut()}>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Log out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+      </header>
+
       {/* Sidebar */}
-      <aside className="w-64 border-r p-4 flex flex-col space-y-4">
+      <aside className={`w-full md:w-64 border-r p-4 flex flex-col space-y-4 ${isSidebarOpen ? 'block' : 'hidden'} md:block`}>
         <Card className="w-full">
           <CardContent className="p-4 flex flex-col items-center relative">
             <Label htmlFor="image-upload" className="cursor-pointer">
@@ -357,9 +416,9 @@ export function Playgrounds() {
       </aside>
 
       {/* Main content area */}
-      <div className="flex-1 flex flex-col">
-        {/* Header */}
-        <header className="h-16 border-b flex items-center justify-between px-4">
+      <div className="flex-1 flex flex-col w-full md:w-auto">
+        {/* Desktop header */}
+        <header className="hidden md:flex h-16 border-b items-center justify-between px-4">
           <div className="flex items-center space-x-4">
             <div className="w-8 h-8">
               <Image
@@ -465,7 +524,7 @@ export function Playgrounds() {
           </div>
 
           {/* Generated images row */}
-          <div className="h-[120px] border-t">
+          <div className="h-24 md:h-[120px] border-t">
             <ScrollArea className="w-full h-full">
               <div className="flex p-2 gap-2">
                 {generatedImages.map((image, index) => (
@@ -489,3 +548,4 @@ export function Playgrounds() {
     </div>
   )
 }
+
