@@ -14,6 +14,7 @@ interface GenerateImageParams {
 
 interface GeneratedImage {
   url: string;
+  metadata: Record<string, string>;
 }
 
 export function useAIPlayground() {
@@ -46,7 +47,7 @@ export function useAIPlayground() {
     }
   };
 
-  const generateImage = async (params: GenerateImageParams): Promise<GeneratedImage[]> => {
+  const generateImage = async (params: GenerateImageParams): Promise<GeneratedImage> => {
     setIsLoading(true);
     setError(null);
     try {
@@ -63,7 +64,7 @@ export function useAIPlayground() {
       }
 
       const data = await response.json();
-      return data.images;
+      return data.image;
     } catch (error) {
       setError('Failed to generate image');
       throw error;

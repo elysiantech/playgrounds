@@ -52,7 +52,7 @@ export function Playgrounds() {
   const searchParams = useSearchParams()
   const [prompt, setPrompt] = React.useState('')
   const [negativePrompt, setNegativePrompt] = React.useState('')
-  const [creativity, setCreativity] = React.useState(50)
+  const [creativity, setCreativity] = React.useState(5)
   const [steps, setSteps] = React.useState(50)
   const [seed, setSeed] = React.useState<'random' | 'fixed'>('random')
   const [fixedSeed, setFixedSeed] = React.useState('')
@@ -152,8 +152,8 @@ export function Playgrounds() {
       // Update newImages with the generated URLs
       const updatedImages = newImages.map((image, index) => ({
         ...image,
-        url: generatedImages[index][0].url,
-        // metadata: generatedImages[index][0].metadata
+        url: generatedImages[index].url,
+        metadata: generatedImages[index].metadata
       }));
 
       // Update the state with the generated images
@@ -232,8 +232,15 @@ export function Playgrounds() {
 
   const handleDeleteImage = (imageToDelete: ImageData) => {
     setGeneratedImages(prev => prev.filter(img => img.url !== imageToDelete.url))
-    if (selectedImage && selectedImage.url === imageToDelete.url) {
-      setSelectedImage(null)
+    if (selectedImage && selectedImage.url === imageToDelete.url){
+      let nextImage = null;
+      generatedImages.forEach((image:ImageData, index:number) => {
+        if (image.url === imageToDelete.url){
+          nextImage = (index + 1) <= generatedImages.length? generatedImages[index + 1]:null
+          return;
+        }
+      })
+      setSelectedImage(nextImage)
     }
   }
 
@@ -269,7 +276,7 @@ export function Playgrounds() {
               className="rounded-md"
             />
           </div>
-          <h1 className="text-xl font-bold">Playgrounds</h1>
+          <h1 className="text-xl font-semibold">Playgrounds</h1>
         </div>
         {session?.user && (
           <DropdownMenu>
@@ -381,13 +388,13 @@ export function Playgrounds() {
           <Slider
             value={[creativity]}
             onValueChange={(values) => setCreativity(values[0])}
-            max={100}
+            max={10}
             step={1}
           />
           <div className="flex justify-between text-xs">
-            <span>Precise</span>
-            <span>Balanced</span>
             <span>Creative</span>
+            <span>Balanced</span>
+            <span>Precise</span>
           </div>
         </div>
 
@@ -467,7 +474,7 @@ export function Playgrounds() {
                 className="rounded-md"
               />
             </div>
-            <h1 className="text-xl font-bold">Playgrounds</h1>
+            <h1 className="text-xl font-semibold">Playgrounds</h1>
           </div>
           {session?.user && (
           <DropdownMenu>
@@ -521,7 +528,7 @@ export function Playgrounds() {
                   width={512}
                   height={512}
                   className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
-                  unoptimized={selectedImage.url.startsWith('data:')}
+                  unoptimized/*={selectedImage.url.startsWith('data:')}*/
                 />
               ) : (
                 <div className="w-full h-full min-h-[300px] bg-muted rounded-lg flex items-center justify-center">
@@ -604,7 +611,7 @@ export function Playgrounds() {
                       height={100}
                       className="rounded-md cursor-pointer hover:opacity-80 transition-opacity"
                       onClick={() => setSelectedImage(image)}
-                      unoptimized={image.url.startsWith('data:')}
+                      unoptimized/*={image.url.startsWith('data:')}*/
                     />
                     <Button
                       size="icon"
