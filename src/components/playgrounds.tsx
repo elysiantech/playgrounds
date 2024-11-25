@@ -31,7 +31,8 @@ import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { toast } from '@/hooks/use-toast'
-import { useAIPlayground } from "../hooks/useAIPlayground"
+import { useAIPlayground } from "@/hooks/useAIPlayground"
+import { processWithConcurrencyLimit } from '@/lib/utils'
 
 interface ImageData {
   id?:string;
@@ -56,7 +57,7 @@ export function Playgrounds() {
   const [steps, setSteps] = React.useState(50)
   const [seed, setSeed] = React.useState<'random' | 'fixed'>('random')
   const [fixedSeed, setFixedSeed] = React.useState('')
-  const [numberOfImages, setNumberOfImages] = React.useState(2)
+  const [numberOfImages, setNumberOfImages] = React.useState(1)
   const [refImage, setRefImage] = React.useState<string | null>(null)
   const [generatedImages, setGeneratedImages] = React.useState<ImageData[]>([])
   const [selectedImage, setSelectedImage] = React.useState<ImageData | null>(null)
@@ -135,18 +136,18 @@ export function Playgrounds() {
       setSelectedImage(newImages[0]);
   
       // Generate images using the useAIPlayground hook
-      const generatedImages = await Promise.all(
-        newImages.map(image =>
-          generateImage({
-            prompt: image.prompt,
-            negativePrompt: image.negativePrompt,
-            creativity: image.creativity,
-            steps: image.steps,
-            seed: image.seed,
-            refImage: refImage || undefined,
-            numberOfImages: 1,
-          })
-        )
+      const generatedImages = await processWithConcurrencyLimit(
+        newImages, 
+        2, // max 2 concurrently lower costs
+        (image) => generateImage({
+          prompt: image.prompt,
+          negativePrompt: image.negativePrompt,
+          creativity: image.creativity,
+          steps: image.steps,
+          seed: image.seed,
+          refImage: refImage || undefined,
+          numberOfImages: 1,
+        })
       );
   
       // Update newImages with the generated URLs
