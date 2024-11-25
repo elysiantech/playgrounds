@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Moon, Sun, LogOut, Upload, X, Sparkles, Scale, Trash2, Download, RefreshCw, Bookmark, Share, Menu } from 'lucide-react'
+import { Moon, Sun, LogOut, Upload, X, Sparkles, Scale, Trash2, Download, RefreshCw, Bookmark, BookmarkCheck, Share, Menu } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import Image from 'next/image'
 import { useSession, signOut } from "next-auth/react"
@@ -33,6 +33,7 @@ import { toast } from '@/hooks/use-toast'
 import { useAIPlayground } from "../hooks/useAIPlayground"
 
 interface ImageData {
+  id?:string;
   url: string;
   prompt: string;
   negativePrompt: string;
@@ -40,6 +41,7 @@ interface ImageData {
   steps: number;
   seed: number;
   numberOfImages: number;
+  bookmark?: boolean;
 }
 
 export function Playgrounds() {
@@ -59,6 +61,13 @@ export function Playgrounds() {
   const [showTools, setShowTools] = React.useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false)
   const { enhancePrompt, generateImage } = useAIPlayground()
+
+  React.useEffect(() => {
+    const savedTheme = localStorage.getItem('theme')
+    if (savedTheme) {
+      setTheme(savedTheme)
+    }
+  }, [])
 
   React.useEffect(() => {
     const promptParam = searchParams.get('prompt')
@@ -194,6 +203,15 @@ export function Playgrounds() {
           })
         }
         break;
+        case 'bookmark':
+          if (selectedImage) {
+            const updatedImages = generatedImages.map(image =>
+              image.url === selectedImage.url ? { ...image, bookmark: !image.bookmark } : image
+            );
+            setGeneratedImages(updatedImages);
+            setSelectedImage({...selectedImage, bookmark: !selectedImage.bookmark});
+          }
+          break;
       default:
         console.log(`Performing ${action} on the image`)
     }
@@ -252,11 +270,11 @@ export function Playgrounds() {
                 <span>{session.user.email || ''}</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setTheme('light')}>
+              <DropdownMenuItem onClick={() => {setTheme('light'); localStorage.setItem('theme', 'light')}}>
                 <Sun className="mr-2 h-4 w-4" />
                 <span>Light mode</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTheme('dark')}>
+              <DropdownMenuItem onClick={() => {setTheme('dark'); localStorage.setItem('theme', 'dark')}}>
                 <Moon className="mr-2 h-4 w-4" />
                 <span>Dark mode</span>
               </DropdownMenuItem>
@@ -496,7 +514,7 @@ export function Playgrounds() {
                     {[
                       { icon: RefreshCw, label: 'Remix', action: 'remix' },
                       { icon: Scale, label: 'Upscale', action: 'upscale' },
-                      { icon: Bookmark, label: 'Bookmark', action: 'bookmark' },
+                      { icon: selectedImage.bookmark? BookmarkCheck:Bookmark, label: 'Bookmark', action: 'bookmark' },
                       { icon: Share, label: 'Share', action: 'share' },
                       { icon: Download, label: 'Download', action: 'download' },
                       { icon: Trash2, label: 'Delete', action: 'delete' },
