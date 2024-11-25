@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Moon, Sun, LogOut, Upload, X, Sparkles, Scale, Trash2, Download, RefreshCw, Bookmark, BookmarkCheck, Share, Menu } from 'lucide-react'
+import { Moon, Sun, LogOut, Upload, X, Sparkles, Trash2, Download, RefreshCw, Bookmark, BookmarkCheck, Share2 as Share, Menu, Settings2 as Edit, Expand, Layers, ImageOff } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import Image from 'next/image'
 import { useSession, signOut } from "next-auth/react"
@@ -29,6 +29,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { toast } from '@/hooks/use-toast'
 import { useAIPlayground } from "../hooks/useAIPlayground"
 
@@ -42,6 +43,7 @@ interface ImageData {
   seed: number;
   numberOfImages: number;
   bookmark?: boolean;
+  metadata: Record<string, string | number>;
 }
 
 export function Playgrounds() {
@@ -124,6 +126,7 @@ export function Playgrounds() {
           steps,
           seed: uniqueSeed,
           numberOfImages,
+          metadata: {}
         };
       });
     
@@ -150,6 +153,7 @@ export function Playgrounds() {
       const updatedImages = newImages.map((image, index) => ({
         ...image,
         url: generatedImages[index][0].url,
+        // metadata: generatedImages[index][0].metadata
       }));
 
       // Update the state with the generated images
@@ -203,17 +207,33 @@ export function Playgrounds() {
           })
         }
         break;
-        case 'bookmark':
-          if (selectedImage) {
-            const updatedImages = generatedImages.map(image =>
-              image.url === selectedImage.url ? { ...image, bookmark: !image.bookmark } : image
-            );
-            setGeneratedImages(updatedImages);
-            setSelectedImage({...selectedImage, bookmark: !selectedImage.bookmark});
-          }
-          break;
+      case 'bookmark':
+        if (selectedImage) {
+          const updatedImages = generatedImages.map(image =>
+            image.url === selectedImage.url ? { ...image, bookmark: !image.bookmark } : image
+          );
+          setGeneratedImages(updatedImages);
+          setSelectedImage({...selectedImage, bookmark: !selectedImage.bookmark});
+        }
+        break;
+      case 'upscale':
+      case 'make3D':
+      case 'aiExpand':
+      case 'removeBackground':
+        toast({
+          title: "Feature not implemented",
+          description: `The ${action} feature is not yet implemented.`,
+        })
+        break;
       default:
         console.log(`Performing ${action} on the image`)
+    }
+  }
+
+  const handleDeleteImage = (imageToDelete: ImageData) => {
+    setGeneratedImages(prev => prev.filter(img => img.url !== imageToDelete.url))
+    if (selectedImage && selectedImage.url === imageToDelete.url) {
+      setSelectedImage(null)
     }
   }
 
@@ -509,34 +529,64 @@ export function Playgrounds() {
                 </div>
               )}
               {showTools && selectedImage && (
-                <div className="absolute top-2 right-2 bg-background/80 backdrop-blur-sm rounded-lg p-2 flex space-x-2">
-                  <TooltipProvider>
-                    {[
-                      { icon: RefreshCw, label: 'Remix', action: 'remix' },
-                      { icon: Scale, label: 'Upscale', action: 'upscale' },
-                      { icon: selectedImage.bookmark? BookmarkCheck:Bookmark, label: 'Bookmark', action: 'bookmark' },
-                      { icon: Share, label: 'Share', action: 'share' },
-                      { icon: Download, label: 'Download', action: 'download' },
-                      { icon: Trash2, label: 'Delete', action: 'delete' },
-                    ].map(({ icon: Icon, label, action }) => (
-                      <Tooltip key={action}>
-                        <TooltipTrigger asChild>
-                          <Button 
-                            size="icon" 
-                            variant="ghost" 
-                            onClick={() => action === 'download' ? handleDownload() : handleImageAction(action)}
-                          >
-                            <Icon className="h-4 w-4" />
-                            <span className="sr-only">{label}</span>
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>{label}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    ))}
-                  </TooltipProvider>
-                </div>
+                <>
+                  <div className="absolute top-2 left-2 bg-background/40 backdrop-blur-md rounded-lg p-2">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="ghost" size="icon" className="text-foreground/90 hover:text-foreground">
+                          <Edit className="h-4 w-4" />
+                          <span className="sr-only">Edit options</span>
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-40">
+                        <div className="flex flex-col space-y-2">
+                          {[
+                            { icon: Layers, label: 'Make 3D', action: 'make3D' },
+                            { icon: Expand, label: 'AI Expand', action: 'aiExpand' },
+                            { icon: ImageOff, label: 'Remove BG', action: 'removeBackground' },
+                          ].map(({ icon: Icon, label, action }) => (
+                            <Button
+                              key={action}
+                              variant="ghost"
+                              className="justify-start text-foreground/90 hover:text-foreground"
+                              onClick={() => handleImageAction(action)}
+                            >
+                              <Icon className="mr-2 h-4 w-4" />
+                              {label}
+                            </Button>
+                          ))}
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div className="absolute top-2 right-2 bg-background/40 backdrop-blur-md rounded-lg p-2 flex space-x-2">
+                    <TooltipProvider>
+                      {[
+                        { icon: RefreshCw, label: 'Remix', action: 'remix' },
+                        { icon: selectedImage.bookmark? BookmarkCheck:Bookmark, label: 'Bookmark', action: 'bookmark' },
+                        { icon: Share, label: 'Share', action: 'share' },
+                        { icon: Download, label: 'Download', action: 'download' },
+                      ].map(({ icon: Icon, label, action }) => (
+                        <Tooltip key={action}>
+                          <TooltipTrigger asChild>
+                            <Button 
+                              size="icon" 
+                              variant='ghost'
+                              className="text-foreground/90 hover:text-foreground"
+                              onClick={() => action === 'download' ? handleDownload() : handleImageAction(action)}
+                            >
+                              <Icon className={`h-4 w-4`} />
+                              <span className="sr-only">{label}</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{label}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      ))}
+                    </TooltipProvider>
+                  </div>
+                </>
               )}
             </div>
           </div>
@@ -546,16 +596,26 @@ export function Playgrounds() {
             <ScrollArea className="w-full h-full">
               <div className="flex p-2 gap-2">
                 {generatedImages.map((image, index) => (
-                  <Image
-                    key={index}
-                    src={image.url}
-                    alt={`Generated image ${index + 1}`}
-                    width={100}
-                    height={100}
-                    className="rounded-md cursor-pointer hover:opacity-80 transition-opacity"
-                    onClick={() => setSelectedImage(image)}
-                    unoptimized={image.url.startsWith('data:')}
-                  />
+                  <div key={index} className="relative group">
+                    <Image
+                      src={image.url}
+                      alt={`Generated image ${index + 1}`}
+                      width={100}
+                      height={100}
+                      className="rounded-md cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={() => setSelectedImage(image)}
+                      unoptimized={image.url.startsWith('data:')}
+                    />
+                    <Button
+                      size="icon"
+                      variant="destructive"
+                      className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => handleDeleteImage(image)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      <span className="sr-only">Delete image</span>
+                    </Button>
+                  </div>
                 ))}
               </div>
               <ScrollBar orientation="horizontal" />
