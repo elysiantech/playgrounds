@@ -245,16 +245,27 @@ export function Playgrounds() {
     }
   }
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (selectedImage) {
-      const link = document.createElement('a')
-      link.href = selectedImage.url
-      link.download = 'generated-image.png'
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
+      try {
+        const response = await fetch(selectedImage.url, { mode: 'cors' });
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+  
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = 'generated-image.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+  
+        // Clean up the blob URL
+        URL.revokeObjectURL(blobUrl);
+      } catch (error) {
+        console.error('Error downloading the image:', error);
+      }
     }
-  }
+  };
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen)
