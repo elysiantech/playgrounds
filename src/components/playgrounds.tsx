@@ -1,11 +1,12 @@
 'use client'
 
 import * as React from 'react'
-import { Moon, Sun, LogOut, Upload, X, Sparkles, Trash2, Download, RefreshCw, Bookmark, BookmarkCheck, Share2 as Share, Menu, Settings2 as Edit, Expand, Layers, ImageOff, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Moon, Sun, LogOut, Upload, X, Sparkles, Trash2, Download, RefreshCw, Bookmark, BookmarkCheck, Share2 as Share, Menu, Settings2 as Edit, Expand, Layers, ImageOff, ChevronLeft, ChevronRight, Info } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import Image from 'next/image'
 import { useSession, signOut } from "next-auth/react"
 import { useSearchParams } from 'next/navigation'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -62,6 +63,7 @@ export function Playgrounds() {
   const [generatedImages, setGeneratedImages] = React.useState<ImageData[]>([])
   const [selectedImage, setSelectedImage] = React.useState<ImageData | null>(null)
   const [showTools, setShowTools] = React.useState(false)
+  const [showInfoPanel, setShowInfoPanel] = React.useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false)
   const [galleryHeight, setGalleryHeight] = React.useState(120);
   const { enhancePrompt, generateImage } = useAIPlayground()
@@ -229,8 +231,7 @@ export function Playgrounds() {
         break;
       case 'delete':
         if (selectedImage) {
-          setGeneratedImages(prev => prev.filter(img => img.url !== selectedImage.url))
-          setSelectedImage(null)
+          handleDeleteImage(selectedImage)
         }
         break;
       case 'share':
@@ -259,6 +260,9 @@ export function Playgrounds() {
           setGeneratedImages(updatedImages);
           setSelectedImage({ ...selectedImage, bookmark: !selectedImage.bookmark });
         }
+        break;
+      case 'info':
+        setShowInfoPanel(!showInfoPanel)
         break;
       case 'upscale':
       case 'make3D':
@@ -294,14 +298,14 @@ export function Playgrounds() {
         const response = await fetch(selectedImage.url, { mode: 'cors' });
         const blob = await response.blob();
         const blobUrl = URL.createObjectURL(blob);
-  
+
         const link = document.createElement('a');
         link.href = blobUrl;
         link.download = 'generated-image.png';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-  
+
         // Clean up the blob URL
         URL.revokeObjectURL(blobUrl);
       } catch (error) {
@@ -428,6 +432,7 @@ export function Playgrounds() {
         </Card>
 
         <div className="relative">
+          <Label>Prompt</Label>
           <Textarea
             placeholder="Enter your prompt here..."
             value={prompt}
@@ -439,7 +444,7 @@ export function Playgrounds() {
               <Button
                 size="icon"
                 variant="ghost"
-                className="absolute top-2 right-2"
+                className="absolute top-4 right-0"
                 onClick={() => setPrompt('')}
               >
                 <X className="h-4 w-4" />
@@ -447,7 +452,7 @@ export function Playgrounds() {
               <Button
                 size="icon"
                 variant="ghost"
-                className="absolute bottom-2 right-2"
+                className="absolute bottom-1 right-0"
                 onClick={handleEnhancePrompt}
               >
                 <Sparkles className="h-4 w-4" />
@@ -590,90 +595,128 @@ export function Playgrounds() {
           {/* Selected image area */}
           <div className="flex-1 p-4 flex items-center justify-center overflow-hidden" style={{ height: `calc(100% - ${galleryHeight}px)` }}>
             <div
-              className="relative max-w-full max-h-full"
+              className="relative max-w-full max-h-full flex items-center justify-center"
+              style={{ height: '100%', width: '100%' }}
               onMouseEnter={() => setShowTools(true)}
               onMouseLeave={() => setShowTools(false)}
             >
               {selectedImage ? (
-                <Image
-                  src={selectedImage.url}
-                  alt="Generated image"
-                  width={512}
-                  height={512}
-                  className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
-                  //style={{ height: `calc(100% - ${galleryHeight}px)`, width: 'auto' }}
-                  unoptimized
-                />
+                <div className="relative w-full h-full max-w-full max-h-full overflow-hidden" style={{ height: '100%' }}>
+                  <Image
+                    src={selectedImage.url}
+                    alt="Generated image"
+                    className="object-contain rounded-lg shadow-lg"
+                    fill
+                    sizes="100vw"
+                    priority
+                  />
+                  {showTools && selectedImage && (
+                    <>
+                      <div className="absolute top-2 right-2 bg-background/40 backdrop-blur-md rounded-lg p-2 flex space-x-2">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="ghost" size="icon" className="text-foreground/90 hover:text-foreground">
+                              <Edit className="h-4 w-4" />
+                              <span className="sr-only">Edit options</span>
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-40">
+                            <div className="flex flex-col space-y-2">
+                              {[
+                                { icon: Layers, label: 'Make 3D', action: 'make3D' },
+                                { icon: Expand, label: 'AI Expand', action: 'aiExpand' },
+                                { icon: ImageOff, label: 'Remove BG', action: 'removeBackground' },
+                              ].map(({ icon: Icon, label, action }) => (
+                                <Button
+                                  key={action}
+                                  variant="ghost"
+                                  className="justify-start text-foreground/90 hover:text-foreground"
+                                  onClick={() => handleImageAction(action)}
+                                >
+                                  <Icon className="mr-2 h-4 w-4" />
+                                  {label}
+                                </Button>
+                              ))}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                        <TooltipProvider>
+                          {[
+                            { icon: Share, label: 'Share', action: 'share' },
+                            { icon: Download, label: 'Download', action: 'download' },
+                            { icon: RefreshCw, label: 'Remix', action: 'remix' },
+                            { icon: Info, label: 'Info', action: 'info' },
+                            { icon: selectedImage.bookmark ? BookmarkCheck : Bookmark, label: 'Bookmark', action: 'bookmark' },
+                            { icon: Trash2, label: 'Delete', action: 'delete' },
+                          ].map(({ icon: Icon, label, action }) => (
+                            <Tooltip key={action}>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="icon"
+                                  variant='ghost'
+                                  className="text-foreground/90 hover:text-foreground"
+                                  onClick={() => action === 'download' ? handleDownload() : handleImageAction(action)}
+                                >
+                                  <Icon className={`h-4 w-4`} />
+                                  <span className="sr-only">{label}</span>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{label}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          ))}
+                        </TooltipProvider>
+                      </div>
+                    </>
+                  )}
+                  {/* Info Panel */}
+                  <div
+                    className={cn(
+                      "absolute top-0 right-0 h-full w-80 bg-background border-l transform transition-transform duration-300 ease-in-out",
+                      showInfoPanel ? "translate-x-0" : "translate-x-full"
+                    )}
+                  >
+                    <div className="p-4 h-full overflow-y-auto relative">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="absolute top-2 right-2"
+                        onClick={() => setShowInfoPanel(false)}
+                      >
+                        <X className="h-4 w-4" />
+                        <span className="sr-only">Close</span>
+                      </Button>
+                      <h2 className="text-lg font-semibold mb-4">Image Information</h2>
+                      {selectedImage && (
+                        <div className="space-y-4">
+                          <div>
+                            <Label>Prompt</Label>
+                            <p className="text-sm">{selectedImage.prompt}</p>
+                          </div>
+                          <div>
+                            <Label>Creativity</Label>
+                            <p className="text-sm">{selectedImage.creativity}</p>
+                          </div>
+                          <div>
+                            <Label>Steps</Label>
+                            <p className="text-sm">{selectedImage.steps}</p>
+                          </div>
+                          <div>
+                            <Label>Seed</Label>
+                            <p className="text-sm">{selectedImage.seed}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
               ) : (
-                <div
-                  className="w-full h-full min-h-[300px] bg-muted rounded-lg flex items-center justify-center"
-                  //style={{ height: `calc(100% - ${galleryHeight}px)`, width: 'auto'}}
-                >
-                  <p className="text-muted-foreground">
-                    Generate an image to see it here
-                  </p>
+                <div className="w-full h-full flex items-center justify-center bg-muted rounded-lg">
+                  <p className="text-muted-foreground">Generate an image to see it here</p>
                 </div>
               )}
-              {showTools && selectedImage && (
-                <>
-                  <div className="absolute top-2 left-2 bg-background/40 backdrop-blur-md rounded-lg p-2">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-foreground/90 hover:text-foreground">
-                          <Edit className="h-4 w-4" />
-                          <span className="sr-only">Edit options</span>
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-40">
-                        <div className="flex flex-col space-y-2">
-                          {[
-                            { icon: Layers, label: 'Make 3D', action: 'make3D' },
-                            { icon: Expand, label: 'AI Expand', action: 'aiExpand' },
-                            { icon: ImageOff, label: 'Remove BG', action: 'removeBackground' },
-                          ].map(({ icon: Icon, label, action }) => (
-                            <Button
-                              key={action}
-                              variant="ghost"
-                              className="justify-start text-foreground/90 hover:text-foreground"
-                              onClick={() => handleImageAction(action)}
-                            >
-                              <Icon className="mr-2 h-4 w-4" />
-                              {label}
-                            </Button>
-                          ))}
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  <div className="absolute top-2 right-2 bg-background/40 backdrop-blur-md rounded-lg p-2 flex space-x-2">
-                    <TooltipProvider>
-                      {[
-                        { icon: RefreshCw, label: 'Remix', action: 'remix' },
-                        { icon: selectedImage.bookmark ? BookmarkCheck : Bookmark, label: 'Bookmark', action: 'bookmark' },
-                        { icon: Share, label: 'Share', action: 'share' },
-                        { icon: Download, label: 'Download', action: 'download' },
-                      ].map(({ icon: Icon, label, action }) => (
-                        <Tooltip key={action}>
-                          <TooltipTrigger asChild>
-                            <Button
-                              size="icon"
-                              variant='ghost'
-                              className="text-foreground/90 hover:text-foreground"
-                              onClick={() => action === 'download' ? handleDownload() : handleImageAction(action)}
-                            >
-                              <Icon className={`h-4 w-4`} />
-                              <span className="sr-only">{label}</span>
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{label}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      ))}
-                    </TooltipProvider>
-                  </div>
-                </>
-              )}
+
               {selectedImage && (
                 <>
                   <Button
@@ -711,6 +754,7 @@ export function Playgrounds() {
             </div>
           </div>
 
+
           {/* Generated images row */}
           <div className="relative border-t" style={{ height: `${galleryHeight}px` }}>
             <ScrollArea className="w-full h-full">
@@ -719,9 +763,9 @@ export function Playgrounds() {
                 style={{ cursor: 'ns-resize' }}
                 onMouseDown={handleGalleryResize}
               />
-              <div className="flex p-2 gap-2">
+              <div className="flex p-2 gap-2 overflow-x-auto">
                 {generatedImages.map((image, index) => (
-                  <div key={index} className="relative group">
+                  <div key={index} className="relative group flex-shrink-0">
                     <Image
                       src={image.url}
                       alt={`Generated image ${index + 1}`}
@@ -732,15 +776,6 @@ export function Playgrounds() {
                       style={{ height: `${galleryHeight - 16}px`, width: 'auto' }}
                       unoptimized
                     />
-                    <Button
-                      size="icon"
-                      variant="destructive"
-                      className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => handleDeleteImage(image)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      <span className="sr-only">Delete image</span>
-                    </Button>
                   </div>
                 ))}
               </div>
