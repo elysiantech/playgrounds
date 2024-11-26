@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     prompt: params.prompt,
     negative_prompt: params.negativePrompt,
     num_inference_steps: undefined,
-    ref_image: params.refImage,
+    image_path: params.refImage,
     prompt_strength: (params.prompt && params.refImage) ? (params.creativity - 1) / 9 : undefined,
     seed: params.seed,
   };
