@@ -3,11 +3,11 @@ import { getUrlFromS3 } from '@/lib/aws';
 
 interface GenerateImageParams {
   prompt?: string;
-  negativePrompt?: string;
   creativity: number;
   steps: number;
   seed: number;
   refImage?: string; // Assuming refImage is passed as a base64 string
+  model: string;
   numberOfImages: number;
 }
 
@@ -19,14 +19,22 @@ export async function POST(request: Request) {
 
   const newPayload = {
     prompt: params.prompt,
-    negative_prompt: params.negativePrompt,
     num_inference_steps: undefined,
     image_path: params.refImage,
     prompt_strength: (params.prompt && params.refImage) ? (params.creativity - 1) / 9 : undefined,
     seed: params.seed,
   };
-  const taskType = "textToImage"; // textToImage, remixImage, imageToModel
-  const url = `${process.env.BACKEND_URL}/start-task?taskType=${taskType}&modelVersion=v1&waitUntilComplete=true`;
+  const modelTypes:Record<string,string> = {
+    'Flux.1-dev': "Flux",
+    'Flux.1-Schnell': "FluxSchnell",
+    'Flux.1-Redux': "Flux",
+    'SD':"StableDiffusion", 
+    'SDXL':"StableDiffusionXL"
+  };
+  
+  let taskType = `taskType=textToImage`; // textToImage, remixImage, imageToModel
+  taskType = `className=${ modelTypes[params.model] || "FluxSchnell" }`;
+  const url = `${process.env.BACKEND_URL}/start-task?${taskType}&waitUntilComplete=true`;
   const response = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

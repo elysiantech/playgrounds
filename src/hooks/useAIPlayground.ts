@@ -4,10 +4,10 @@ import { useState } from 'react';
 
 interface GenerateImageParams {
   prompt: string;
-  negativePrompt: string;
   creativity: number;
   steps: number;
   seed: number;
+  model:string;
   refImage?: string;
   numberOfImages: number;
 }

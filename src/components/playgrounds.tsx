@@ -26,6 +26,13 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Card, CardContent } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
@@ -39,13 +46,13 @@ interface ImageData {
   id?: string;
   url: string;
   prompt: string;
-  negativePrompt: string;
   creativity: number;
   steps: number;
   seed: number;
   numberOfImages: number;
   bookmark?: boolean;
   metadata: Record<string, string | number>;
+  model:string
 }
 
 export function Playgrounds() {
@@ -53,12 +60,12 @@ export function Playgrounds() {
   const { setTheme, theme } = useTheme()
   const searchParams = useSearchParams()
   const [prompt, setPrompt] = React.useState('')
-  const [negativePrompt, setNegativePrompt] = React.useState('')
   const [creativity, setCreativity] = React.useState(5)
   const [steps, setSteps] = React.useState(50)
   const [seed, setSeed] = React.useState<'random' | 'fixed'>('random')
   const [fixedSeed, setFixedSeed] = React.useState('')
   const [numberOfImages, setNumberOfImages] = React.useState(1)
+  const [model, setModel] = React.useState('Flux.1-Schnell')
   const [refImage, setRefImage] = React.useState<string | null>(null)
   const [generatedImages, setGeneratedImages] = React.useState<ImageData[]>([])
   const [selectedImage, setSelectedImage] = React.useState<ImageData | null>(null)
@@ -119,14 +126,14 @@ export function Playgrounds() {
 
   React.useEffect(() => {
     const promptParam = searchParams.get('prompt')
-    const negativePromptParam = searchParams.get('negativePrompt')
+    const modelParam = searchParams.get('model')
     const creativityParam = searchParams.get('creativity')
     const stepsParam = searchParams.get('steps')
     const seedParam = searchParams.get('seed')
     const numberOfImagesParam = searchParams.get('numberOfImages')
 
     if (promptParam) setPrompt(promptParam)
-    if (negativePromptParam) setNegativePrompt(negativePromptParam)
+    if (modelParam) setModel(modelParam)
     if (creativityParam) setCreativity(parseInt(creativityParam))
     if (stepsParam) setSteps(parseInt(stepsParam))
     if (seedParam) {
@@ -161,21 +168,22 @@ export function Playgrounds() {
   }
 
   const handleGenerateImage = async () => {
-    try {
-      const newImages: ImageData[] = Array.from({ length: numberOfImages }, () => {
-        const uniqueSeed = seed === 'fixed' ? parseInt(fixedSeed) : Math.floor(Math.random() * 2 ** 32);
-        return {
-          url: `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='512' height='512' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' font-size='24' text-anchor='middle' dy='.3em' fill='%23999'%3EGenerating...%3C/text%3E%3C/svg%3E`,
-          prompt,
-          negativePrompt,
-          creativity,
-          steps,
-          seed: uniqueSeed,
-          numberOfImages,
-          metadata: {}
-        };
-      });
+    
+    const newImages: ImageData[] = Array.from({ length: numberOfImages }, () => {
+      const uniqueSeed = seed === 'fixed' ? parseInt(fixedSeed) : Math.floor(Math.random() * 2 ** 32);
+      return {
+        url: `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='512' height='512' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' font-size='24' text-anchor='middle' dy='.3em' fill='%23999'%3EGenerating...%3C/text%3E%3C/svg%3E`,
+        prompt,
+        model,
+        creativity,
+        steps,
+        seed: uniqueSeed,
+        numberOfImages,
+        metadata: {}
+      };
+    });
 
+    try {
       // Temporarily set placeholder images
       setGeneratedImages(prev => [...newImages, ...prev]);
       setSelectedImage(newImages[0]);
@@ -186,7 +194,7 @@ export function Playgrounds() {
         2, // max 2 concurrently lower costs
         (image) => generateImage({
           prompt: image.prompt,
-          negativePrompt: image.negativePrompt,
+          model: image.model,
           creativity: image.creativity,
           steps: image.steps,
           seed: image.seed,
@@ -207,7 +215,9 @@ export function Playgrounds() {
       setSelectedImage(updatedImages[0]);
     } catch (error) {
       console.error('Error generating image:', error)
-      setGeneratedImages([])
+      // Remove set placeholder images
+      setGeneratedImages(prev => [...prev.slice(numberOfImages)]);
+      setSelectedImage(null);
       toast({
         title: "Error",
         description: "Failed to generate images. Please try again.",
@@ -221,7 +231,7 @@ export function Playgrounds() {
       case 'remix':
         if (selectedImage) {
           setPrompt(selectedImage.prompt)
-          setNegativePrompt(selectedImage.negativePrompt)
+          setModel(selectedImage.model)
           setCreativity(selectedImage.creativity)
           setSteps(selectedImage.steps)
           setSeed('fixed')
@@ -238,7 +248,7 @@ export function Playgrounds() {
         if (selectedImage) {
           const params = new URLSearchParams({
             prompt: selectedImage.prompt,
-            negativePrompt: selectedImage.negativePrompt,
+            model: selectedImage.model,
             creativity: selectedImage.creativity.toString(),
             steps: selectedImage.steps.toString(),
             seed: String(selectedImage.seed),
@@ -480,11 +490,6 @@ export function Playgrounds() {
           <AccordionItem value="advanced">
             <AccordionTrigger>Advanced</AccordionTrigger>
             <AccordionContent className="space-y-4">
-              <Textarea
-                placeholder="Negative prompt..."
-                value={negativePrompt}
-                onChange={(e) => setNegativePrompt(e.target.value)}
-              />
               <div className="space-y-2">
                 <Label>Steps</Label>
                 <Slider
@@ -515,6 +520,19 @@ export function Playgrounds() {
                   onChange={(e) => setFixedSeed(e.target.value)}
                 />
               )}
+              <div className="space-y-2">
+                <Label htmlFor="model">Model</Label>
+                <Select value={model} onValueChange={setModel}>
+                  <SelectTrigger id="model">
+                    <SelectValue placeholder="Select a model" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Flux.1-Schnell">Flux.1-Schnell</SelectItem>
+                    <SelectItem value="Flux.1-dev">Flux.1-dev</SelectItem>
+                    <SelectItem value="Flux.1-Redux">Flux.1-Redux</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </AccordionContent>
           </AccordionItem>
         </Accordion>
@@ -705,6 +723,10 @@ export function Playgrounds() {
                           <div>
                             <Label>Seed</Label>
                             <p className="text-sm">{selectedImage.seed}</p>
+                          </div>
+                          <div>
+                            <Label>Model</Label>
+                            <p className="text-sm">{selectedImage.model}</p>
                           </div>
                         </div>
                       )}
