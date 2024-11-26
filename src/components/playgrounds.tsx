@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Moon, Sun, LogOut, Upload, X, Sparkles, Trash2, Download, RefreshCw, Bookmark, BookmarkCheck, Share2 as Share, Menu, Settings2 as Edit, Expand, Layers, ImageOff } from 'lucide-react'
+import { Moon, Sun, LogOut, Upload, X, Sparkles, Trash2, Download, RefreshCw, Bookmark, BookmarkCheck, Share2 as Share, Menu, Settings2 as Edit, Expand, Layers, ImageOff, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import Image from 'next/image'
 import { useSession, signOut } from "next-auth/react"
@@ -35,7 +35,7 @@ import { useAIPlayground } from "@/hooks/useAIPlayground"
 import { processWithConcurrencyLimit } from '@/lib/utils'
 
 interface ImageData {
-  id?:string;
+  id?: string;
   url: string;
   prompt: string;
   negativePrompt: string;
@@ -63,6 +63,7 @@ export function Playgrounds() {
   const [selectedImage, setSelectedImage] = React.useState<ImageData | null>(null)
   const [showTools, setShowTools] = React.useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false)
+  const [galleryHeight, setGalleryHeight] = React.useState(120);
   const { enhancePrompt, generateImage } = useAIPlayground()
 
   React.useEffect(() => {
@@ -71,6 +72,48 @@ export function Playgrounds() {
       setTheme(savedTheme)
     }
   }, [])
+
+  React.useEffect(() => {
+    // Load generated images from sessionStorage on component mount
+    const savedGeneratedImages = sessionStorage.getItem('generatedImages');
+    if (savedGeneratedImages) {
+      setGeneratedImages(JSON.parse(savedGeneratedImages) as ImageData[]);
+    }
+
+    // Load bookmarked images from localStorage on component mount
+    const savedBookmarks = localStorage.getItem('bookmarkedImages');
+    if (savedBookmarks) {
+      const bookmarkedImages = (JSON.parse(savedBookmarks) as ImageData[]).map((bookmark) => ({
+        ...bookmark,
+        bookmark: true,
+      }));
+      setGeneratedImages((prev) => {
+        const combined = [...prev];
+        bookmarkedImages.forEach((bookmark) => {
+          const existingIndex = combined.findIndex(
+            (image) => image.url === bookmark.url
+          );
+          if (existingIndex !== -1) {
+            combined[existingIndex] = { ...combined[existingIndex], bookmark: true };
+          } else {
+            combined.push(bookmark);
+          }
+        });
+        return combined;
+      });
+    }
+  }, []);
+
+  React.useEffect(() => {
+    // Save generated images to sessionStorage whenever they change
+    sessionStorage.setItem('generatedImages', JSON.stringify(generatedImages));
+  }, [generatedImages]);
+
+  React.useEffect(() => {
+    // Save bookmarked images to localStorage whenever they change
+    const bookmarkedImages = generatedImages.filter((image) => image.bookmark);
+    localStorage.setItem('bookmarkedImages', JSON.stringify(bookmarkedImages));
+  }, [generatedImages]);
 
   React.useEffect(() => {
     const promptParam = searchParams.get('prompt')
@@ -130,14 +173,14 @@ export function Playgrounds() {
           metadata: {}
         };
       });
-    
+
       // Temporarily set placeholder images
       setGeneratedImages(prev => [...newImages, ...prev]);
       setSelectedImage(newImages[0]);
-  
+
       // Generate images using the useAIPlayground hook
       const generatedImages = await processWithConcurrencyLimit(
-        newImages, 
+        newImages,
         2, // max 2 concurrently lower costs
         (image) => generateImage({
           prompt: image.prompt,
@@ -149,7 +192,7 @@ export function Playgrounds() {
           numberOfImages: 1,
         })
       );
-  
+
       // Update newImages with the generated URLs
       const updatedImages = newImages.map((image, index) => ({
         ...image,
@@ -214,7 +257,7 @@ export function Playgrounds() {
             image.url === selectedImage.url ? { ...image, bookmark: !image.bookmark } : image
           );
           setGeneratedImages(updatedImages);
-          setSelectedImage({...selectedImage, bookmark: !selectedImage.bookmark});
+          setSelectedImage({ ...selectedImage, bookmark: !selectedImage.bookmark });
         }
         break;
       case 'upscale':
@@ -233,11 +276,11 @@ export function Playgrounds() {
 
   const handleDeleteImage = (imageToDelete: ImageData) => {
     setGeneratedImages(prev => prev.filter(img => img.url !== imageToDelete.url))
-    if (selectedImage && selectedImage.url === imageToDelete.url){
+    if (selectedImage && selectedImage.url === imageToDelete.url) {
       let nextImage = null;
-      generatedImages.forEach((image:ImageData, index:number) => {
-        if (image.url === imageToDelete.url){
-          nextImage = (index + 1) <= generatedImages.length? generatedImages[index + 1]:null
+      generatedImages.forEach((image: ImageData, index: number) => {
+        if (image.url === imageToDelete.url) {
+          nextImage = (index + 1) <= generatedImages.length ? generatedImages[index + 1] : null
           return;
         }
       })
@@ -245,20 +288,49 @@ export function Playgrounds() {
     }
   }
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (selectedImage) {
-      const link = document.createElement('a')
-      link.href = selectedImage.url
-      link.download = 'generated-image.png'
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
+      try {
+        const response = await fetch(selectedImage.url, { mode: 'cors' });
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+  
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = 'generated-image.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+  
+        // Clean up the blob URL
+        URL.revokeObjectURL(blobUrl);
+      } catch (error) {
+        console.error('Error downloading the image:', error);
+      }
     }
-  }
+  };
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen)
   }
+
+  const handleGalleryResize = (e: React.MouseEvent<HTMLDivElement>) => {
+    const startY = e.clientY;
+    const startHeight = galleryHeight;
+
+    const doDrag = (e: MouseEvent) => {
+      const newHeight = Math.max(100, Math.min(200, startHeight - (e.clientY - startY)));
+      setGalleryHeight(newHeight);
+    };
+
+    const stopDrag = () => {
+      document.removeEventListener('mousemove', doDrag);
+      document.removeEventListener('mouseup', stopDrag);
+    };
+
+    document.addEventListener('mousemove', doDrag);
+    document.addEventListener('mouseup', stopDrag);
+  };
 
   return (
     <div className="flex flex-col md:flex-row h-screen bg-background">
@@ -298,11 +370,11 @@ export function Playgrounds() {
                 <span>{session.user.email || ''}</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => {setTheme('light'); localStorage.setItem('theme', 'light')}}>
+              <DropdownMenuItem onClick={() => { setTheme('light'); localStorage.setItem('theme', 'light') }}>
                 <Sun className="mr-2 h-4 w-4" />
                 <span>Light mode</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {setTheme('dark'); localStorage.setItem('theme', 'dark')}}>
+              <DropdownMenuItem onClick={() => { setTheme('dark'); localStorage.setItem('theme', 'dark') }}>
                 <Moon className="mr-2 h-4 w-4" />
                 <span>Dark mode</span>
               </DropdownMenuItem>
@@ -478,48 +550,48 @@ export function Playgrounds() {
             <h1 className="text-xl font-semibold">Playgrounds</h1>
           </div>
           {session?.user && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={session.user.image || ''} alt={session.user.name || ''} />
-                <AvatarFallback>{session.user.name?.charAt(0) || 'U'}</AvatarFallback>
-              </Avatar>
-            </Button>
-          </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-            <DropdownMenuItem className="flex items-center">
-              <Avatar className="mr-2 h-8 w-8">
-                <AvatarImage src={session.user.image || ''} alt={session.user.name || ''} />
-                <AvatarFallback>{session.user.name?.charAt(0) || 'U'}</AvatarFallback>
-              </Avatar>
-              <span>{session.user.email || ''}</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => setTheme('light')}>
-                <Sun className="mr-2 h-4 w-4" />
-                <span>Light mode</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setTheme('dark')}>
-                <Moon className="mr-2 h-4 w-4" />
-                <span>Dark mode</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => signOut()}>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={session.user.image || ''} alt={session.user.name || ''} />
+                    <AvatarFallback>{session.user.name?.charAt(0) || 'U'}</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuItem className="flex items-center">
+                  <Avatar className="mr-2 h-8 w-8">
+                    <AvatarImage src={session.user.image || ''} alt={session.user.name || ''} />
+                    <AvatarFallback>{session.user.name?.charAt(0) || 'U'}</AvatarFallback>
+                  </Avatar>
+                  <span>{session.user.email || ''}</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setTheme('light')}>
+                  <Sun className="mr-2 h-4 w-4" />
+                  <span>Light mode</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme('dark')}>
+                  <Moon className="mr-2 h-4 w-4" />
+                  <span>Dark mode</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => signOut()}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </header>
 
         {/* Main content */}
         <main className="flex-1 flex flex-col overflow-hidden">
           {/* Selected image area */}
-          <div className="flex-1 p-4 flex items-center justify-center overflow-hidden">
-            <div 
-              className="relative max-w-full max-h-full" 
-              onMouseEnter={() => setShowTools(true)} 
+          <div className="flex-1 p-4 flex items-center justify-center overflow-hidden" style={{ height: `calc(100% - ${galleryHeight}px)` }}>
+            <div
+              className="relative max-w-full max-h-full"
+              onMouseEnter={() => setShowTools(true)}
               onMouseLeave={() => setShowTools(false)}
             >
               {selectedImage ? (
@@ -529,11 +601,17 @@ export function Playgrounds() {
                   width={512}
                   height={512}
                   className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
-                  unoptimized/*={selectedImage.url.startsWith('data:')}*/
+                  //style={{ height: `calc(100% - ${galleryHeight}px)`, width: 'auto' }}
+                  unoptimized
                 />
               ) : (
-                <div className="w-full h-full min-h-[300px] bg-muted rounded-lg flex items-center justify-center">
-                  <p className="text-muted-foreground">Generate an image to see it here</p>
+                <div
+                  className="w-full h-full min-h-[300px] bg-muted rounded-lg flex items-center justify-center"
+                  //style={{ height: `calc(100% - ${galleryHeight}px)`, width: 'auto'}}
+                >
+                  <p className="text-muted-foreground">
+                    Generate an image to see it here
+                  </p>
                 </div>
               )}
               {showTools && selectedImage && (
@@ -571,14 +649,14 @@ export function Playgrounds() {
                     <TooltipProvider>
                       {[
                         { icon: RefreshCw, label: 'Remix', action: 'remix' },
-                        { icon: selectedImage.bookmark? BookmarkCheck:Bookmark, label: 'Bookmark', action: 'bookmark' },
+                        { icon: selectedImage.bookmark ? BookmarkCheck : Bookmark, label: 'Bookmark', action: 'bookmark' },
                         { icon: Share, label: 'Share', action: 'share' },
                         { icon: Download, label: 'Download', action: 'download' },
                       ].map(({ icon: Icon, label, action }) => (
                         <Tooltip key={action}>
                           <TooltipTrigger asChild>
-                            <Button 
-                              size="icon" 
+                            <Button
+                              size="icon"
                               variant='ghost'
                               className="text-foreground/90 hover:text-foreground"
                               onClick={() => action === 'download' ? handleDownload() : handleImageAction(action)}
@@ -596,12 +674,51 @@ export function Playgrounds() {
                   </div>
                 </>
               )}
+              {selectedImage && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-background/40 backdrop-blur-md rounded-full"
+                    onClick={() => {
+                      const currentIndex = generatedImages.findIndex(img => img.url === selectedImage.url);
+                      if (currentIndex > 0) {
+                        setSelectedImage(generatedImages[currentIndex - 1]);
+                      }
+                    }}
+                    disabled={generatedImages.indexOf(selectedImage) === 0}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    <span className="sr-only">Previous image</span>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-background/40 backdrop-blur-md rounded-full"
+                    onClick={() => {
+                      const currentIndex = generatedImages.findIndex(img => img.url === selectedImage.url);
+                      if (currentIndex < generatedImages.length - 1) {
+                        setSelectedImage(generatedImages[currentIndex + 1]);
+                      }
+                    }}
+                    disabled={generatedImages.indexOf(selectedImage) === generatedImages.length - 1}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                    <span className="sr-only">Next image</span>
+                  </Button>
+                </>
+              )}
             </div>
           </div>
 
           {/* Generated images row */}
-          <div className="h-24 md:h-[120px] border-t">
+          <div className="relative border-t" style={{ height: `${galleryHeight}px` }}>
             <ScrollArea className="w-full h-full">
+              <div
+                className="absolute top-0 left-0 right-0 h-2 cursor-ns-resize bg-border "
+                style={{ cursor: 'ns-resize' }}
+                onMouseDown={handleGalleryResize}
+              />
               <div className="flex p-2 gap-2">
                 {generatedImages.map((image, index) => (
                   <div key={index} className="relative group">
@@ -612,7 +729,8 @@ export function Playgrounds() {
                       height={100}
                       className="rounded-md cursor-pointer hover:opacity-80 transition-opacity"
                       onClick={() => setSelectedImage(image)}
-                      unoptimized/*={image.url.startsWith('data:')}*/
+                      style={{ height: `${galleryHeight - 16}px`, width: 'auto' }}
+                      unoptimized
                     />
                     <Button
                       size="icon"
