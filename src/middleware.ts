@@ -9,6 +9,7 @@ export default async function middleware(request: NextRequest) {
         '/_next/image',
         '/favicon.ico',
         '/signin',
+        '/share',
     ];
     if (excludePaths.some(path => pathname.startsWith(path))||
         ['.png', '.svg'].some(path => pathname.endsWith(path))) {

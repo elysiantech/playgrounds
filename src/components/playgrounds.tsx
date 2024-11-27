@@ -73,7 +73,7 @@ export function Playgrounds() {
   const [showInfoPanel, setShowInfoPanel] = React.useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false)
   const [galleryHeight, setGalleryHeight] = React.useState(120);
-  const { enhancePrompt, generateImage } = useAIPlayground()
+  const { enhancePrompt, generateImage, generateShareLink } = useAIPlayground()
 
   React.useEffect(() => {
     const savedTheme = localStorage.getItem('theme')
@@ -254,11 +254,14 @@ export function Playgrounds() {
             seed: String(selectedImage.seed),
             numberOfImages: "1",//selectedImage.numberOfImages.toString(),
           })
-          const url = `${window.location.origin}${window.location.pathname}?${params.toString()}`
-          navigator.clipboard.writeText(url)
-          toast({
-            title: "URL Copied",
-            description: "The share URL has been copied to your clipboard.",
+          const redirectUrl = `${window.location.origin}${window.location.pathname}?${params.toString()}`
+          generateShareLink({ imageUrl: selectedImage.url, redirectUrl, description: "Playgrounds AI-generated image."})
+          .then((url:string) => {
+            navigator.clipboard.writeText(url)
+            toast({
+              title: "URL Copied",
+              description: "The share URL has been copied to your clipboard.",
+            })
           })
         }
         break;
