@@ -58,19 +58,20 @@ export async function generateAndUploadSharePage({
 }): Promise<string> {
   // Generate a unique identifier
   const id = uuidv4();
+  const title = "elysiantech"
 
   // Generate the HTML content
   const htmlContent = `
     <!DOCTYPE html>
     <html>
       <head>
-        <meta property="og:title" content="Generated Image" />
+        <meta property="og:title" content="${title}" />
         <meta property="og:description" content="${description}" />
         <meta property="og:image" content="${imageUrl}" />
         <meta property="og:url" content="${process.env.NEXTAUTH_URL}/share/${id}" />
         <meta property="og:type" content="website" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Generated Image" />
+        <meta name="twitter:title" content="${title}" />
         <meta name="twitter:description" content="${description}" />
         <meta name="twitter:image" content="${imageUrl}" />
         <meta http-equiv="refresh" content="0;url=${redirectUrl}" />
