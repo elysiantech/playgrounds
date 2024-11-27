@@ -37,7 +37,6 @@ export async function POST(request: Request) {
     response_format: 'b64_json', // Request base64 response
   };
 
-  console.log(payload)
   try {
     // Fetch image from Together API
     const response = await fetch('https://api.together.xyz/v1/images/generations', {
