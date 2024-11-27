@@ -12,7 +12,7 @@ interface GenerateImageParams {
   numberOfImages: number;
 }
 
-export async function POST(request: Request) {
+async function together (request: Request) {
   const params: GenerateImageParams = await request.json();
 
   const modelTypes: Record<string, string> = {
@@ -79,7 +79,7 @@ export async function POST(request: Request) {
   }
 }
 
-export async function POST_(request: Request) {
+async function backend(request: Request) {
   // Parse request parameters
   const params: GenerateImageParams = await request.json();
 
@@ -145,4 +145,11 @@ export async function POST_(request: Request) {
       { status: 500 }
     );
   }
+}
+
+export async function POST(request: Request){
+  if (true)
+    return await together(request)
+  else 
+    return await backend(request)
 }
