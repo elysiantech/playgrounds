@@ -10,7 +10,6 @@ interface GenerateImageParams {
   model:string;
   refImage?: string;
   numberOfImages: number;
-  userId: string;
 }
 
 interface GeneratedImage {
@@ -82,7 +81,7 @@ export function useAIPlayground() {
     }
   };
 
-  const generateImage = async (params: GenerateImageParams & { userId: string }): Promise<GeneratedImage> => {
+  const generateImage = async (params: GenerateImageParams): Promise<GeneratedImage> => {
     setIsLoading(true);
     setError(null);
     try {
@@ -109,7 +108,6 @@ export function useAIPlayground() {
         steps: params.steps,
         seed: params.seed,
         refImage: params.refImage || null,
-        userId: params.userId,
         bookmark: false, // Default to unbookmarked
       }));
       return { ...data.image, id: savedImage.id };
@@ -166,6 +164,26 @@ export function useAIPlayground() {
     }
   };
 
+  const getImages = async (): Promise<GeneratedImage[]> => {
+    
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/images`);
+  
+      if (!response.ok) {
+        throw new Error('Failed to fetch images');
+      }
+  
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      setError('Failed to fetch images');
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const generateShareLink = async (params: ShareLinkParams): Promise<string> => {
     setIsLoading(true);
@@ -199,6 +217,7 @@ export function useAIPlayground() {
     generateImage,
     updateImage,
     deleteImage,
+    getImages,
     generateShareLink,
     isLoading,
     error,

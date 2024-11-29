@@ -52,12 +52,12 @@ interface ImageData {
   numberOfImages: number;
   bookmark?: boolean;
   metadata: Record<string, string | number>;
-  model:string
+  model: string
 }
 
 export function Playgrounds() {
   const { data: session } = useSession()
-  const { setTheme, theme } = useTheme()
+  const { setTheme } = useTheme()
   const searchParams = useSearchParams()
   const [prompt, setPrompt] = React.useState('')
   const [creativity, setCreativity] = React.useState(5)
@@ -73,7 +73,7 @@ export function Playgrounds() {
   const [showInfoPanel, setShowInfoPanel] = React.useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false)
   const [galleryHeight, setGalleryHeight] = React.useState(120);
-  const { enhancePrompt, generateImage, generateShareLink } = useAIPlayground()
+  const { enhancePrompt, generateImage, updateImage, deleteImage, generateShareLink } = useAIPlayground()
 
   React.useEffect(() => {
     const savedTheme = localStorage.getItem('theme')
@@ -86,7 +86,14 @@ export function Playgrounds() {
     // Load generated images from sessionStorage on component mount
     const savedGeneratedImages = sessionStorage.getItem('generatedImages');
     if (savedGeneratedImages) {
-      setGeneratedImages(JSON.parse(savedGeneratedImages) as ImageData[]);
+      const parsedImages = JSON.parse(savedGeneratedImages) as ImageData[];
+      const cleanedGeneratedImages = parsedImages.map((image) => { 
+        const urlObj = new URL(image.url, window.location.origin);
+        const pathParts = urlObj.pathname.split("/");
+        const key = pathParts[pathParts.length - 1];
+        return { ...image, url: `/share/${key}`}
+      });
+      setGeneratedImages(cleanedGeneratedImages);
     }
 
     // Load bookmarked images from localStorage on component mount
@@ -168,7 +175,7 @@ export function Playgrounds() {
   }
 
   const handleGenerateImage = async () => {
-    
+
     const newImages: ImageData[] = Array.from({ length: numberOfImages }, () => {
       const uniqueSeed = seed === 'fixed' ? parseInt(fixedSeed) : Math.floor(Math.random() * 2 ** 32);
       return {
@@ -199,8 +206,7 @@ export function Playgrounds() {
           steps: image.steps,
           seed: image.seed,
           refImage: refImage || undefined,
-          numberOfImages: 1,
-          userId: session?.user.id as string,
+          numberOfImages: 1
         })
       );
 
@@ -227,7 +233,7 @@ export function Playgrounds() {
     }
   }
 
-  const handleImageAction = (action: string) => {
+  const handleImageAction = async (action: string) => {
     switch (action) {
       case 'remix':
         if (selectedImage) {
@@ -256,14 +262,14 @@ export function Playgrounds() {
             numberOfImages: "1",//selectedImage.numberOfImages.toString(),
           })
           const redirectUrl = `${window.location.origin}${window.location.pathname}?${params.toString()}`
-          generateShareLink({ imageUrl: selectedImage.url, redirectUrl, description: "Playgrounds AI-generated image."})
-          .then((url:string) => {
-            navigator.clipboard.writeText(url)
-            toast({
-              title: "URL Copied",
-              description: "The share URL has been copied to your clipboard.",
+          generateShareLink({ imageUrl: selectedImage.url, redirectUrl, description: "Playgrounds AI-generated image." })
+            .then((url: string) => {
+              navigator.clipboard.writeText(url)
+              toast({
+                title: "URL Copied",
+                description: "The share URL has been copied to your clipboard.",
+              })
             })
-          })
         }
         break;
       case 'bookmark':
@@ -273,6 +279,21 @@ export function Playgrounds() {
           );
           setGeneratedImages(updatedImages);
           setSelectedImage({ ...selectedImage, bookmark: !selectedImage.bookmark });
+          try {
+            const isBookmarked = !selectedImage.bookmark;
+            await updateImage(selectedImage.id!, { bookmark: isBookmarked });
+            toast({
+              title: isBookmarked ? "Bookmarked" : "Bookmark Removed",
+              description: `The image has been ${isBookmarked ? "bookmarked" : "unbookmarked"}.`,
+            });
+          } catch (error) {
+            console.error('Failed to update bookmark in database:', error);
+            toast({
+              title: "Error",
+              description: "Failed to update bookmark. Please try again.",
+              variant: "destructive",
+            });
+          }
         }
         break;
       case 'info':
@@ -292,7 +313,7 @@ export function Playgrounds() {
     }
   }
 
-  const handleDeleteImage = (imageToDelete: ImageData) => {
+  const handleDeleteImage = async (imageToDelete: ImageData) => {
     setGeneratedImages(prev => prev.filter(img => img.url !== imageToDelete.url))
     if (selectedImage && selectedImage.url === imageToDelete.url) {
       let nextImage = null;
@@ -303,6 +324,20 @@ export function Playgrounds() {
         }
       })
       setSelectedImage(nextImage)
+    }
+    try {
+      await deleteImage(imageToDelete.id!);
+      toast({
+        title: "Image Deleted",
+        description: "The image has been deleted successfully.",
+      });
+    } catch (error) {
+      console.error('Failed to delete image from database:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete image. Please try again.",
+        variant: "destructive",
+      });
     }
   }
 
@@ -360,7 +395,7 @@ export function Playgrounds() {
           </Button>
           <div className="w-8 h-8">
             <Image
-              src={theme === 'dark' ? '/logo-white-black.png' : '/logo-black-white.png'}
+              src={'/logo-white-black.png'/*theme === 'dark' ? '/logo-white-black.png' : '/logo-black-white.png'*/}
               alt="Playgrounds Logo"
               width={32}
               height={32}
@@ -567,7 +602,7 @@ export function Playgrounds() {
           <div className="flex items-center space-x-4">
             <div className="w-8 h-8">
               <Image
-                src={theme === 'dark' ? '/logo-white-black.png' : '/logo-black-white.png'}
+                src={'/logo-white-black.png'/*theme === 'dark' ? '/logo-white-black.png' : '/logo-black-white.png'*/}
                 alt="Playgrounds Logo"
                 width={32}
                 height={32}
@@ -782,7 +817,14 @@ export function Playgrounds() {
 
 
           {/* Generated images row */}
-          <div className="relative border-t" style={{ height: `${galleryHeight}px` }}>
+          <div
+            className="relative border-t"
+            style={{
+              height: `${galleryHeight}px`,
+              maxHeight: `${galleryHeight}px`, // Constrain ScrollArea height
+              maxWidth: "100vw", // Constrain to viewport width
+            }}
+          >
             <ScrollArea className="w-full h-full">
               <div
                 className="absolute top-0 left-0 right-0 h-2 cursor-ns-resize bg-border "

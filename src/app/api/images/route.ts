@@ -1,10 +1,22 @@
 import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth"
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    // Get the user's session
+    const session = await auth();
 
+    if (!session || !session.user || !session.user.id) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const userId = session.user.id;
+
+    const body = await req.json();
     const {
       url,
       metadata,
@@ -14,7 +26,6 @@ export async function POST(req: Request) {
       steps,
       seed,
       refImage,
-      userId,
     } = body;
 
     // Validate required fields
@@ -45,6 +56,37 @@ export async function POST(req: Request) {
     console.error("Error creating image:", error);
     return NextResponse.json(
       { error: "Failed to create image" },
+      { status: 500 }
+    );
+  }
+}
+
+
+export async function GET() {
+  try {
+    // Get the user's session
+    const session = await auth();
+
+    if (!session || !session.user || !session.user.id) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    const userId = session.user.id;
+
+    // Fetch all images for the authenticated user
+    const images = await prisma.image.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+    });
+
+    return NextResponse.json(images);
+  } catch (error) {
+    console.error("Error fetching images:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch images" },
       { status: 500 }
     );
   }

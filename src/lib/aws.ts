@@ -1,4 +1,6 @@
-import { S3Client, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3"
+import { S3Client, GetObjectCommand, GetObjectCommandOutput, PutObjectCommand } from "@aws-sdk/client-s3"
+import { Readable } from "stream";
+
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { v4 as uuidv4 } from "uuid";
 
@@ -97,7 +99,7 @@ export async function generateAndUploadSharePage({
   return id;
 }
 
-export async function downloadFromS3(key: string): Promise<string> {
+export async function readFromS3(key: string): Promise<{ stream: Readable; contentType: string }> {
   try {
     const bucketName = process.env.AWS_BUCKET!;
     const command = new GetObjectCommand({
@@ -105,16 +107,19 @@ export async function downloadFromS3(key: string): Promise<string> {
       Key: key,
     });
 
-    const response = await s3Client.send(command);
-    const fileContent = await response.Body?.transformToString();
+    const response: GetObjectCommandOutput = await s3Client.send(command);
 
-    if (!fileContent) {
+    if (!response.Body) {
       throw new Error("File content is empty or missing");
     }
 
-    return fileContent;
+    const contentType = response.ContentType || "application/octet-stream";
+    const stream = response.Body as Readable;
+
+    return { stream, contentType };
   } catch (error) {
     console.error("Error downloading file from S3:", error);
     throw new Error("Failed to download file from S3");
   }
 }
+

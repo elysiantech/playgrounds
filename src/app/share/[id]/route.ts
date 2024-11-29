@@ -1,21 +1,20 @@
 import { NextResponse, NextRequest } from "next/server";
-import { downloadFromS3 } from '@/lib/aws'
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+import { readFromS3 } from '@/lib/aws'
+
+export async function GET(req: NextRequest, { params }: {  params: Promise<{ id: string }> }) {
   const id = (await params).id;
+  const key = id.includes(".") ? id : `${id}.html`;
 
   try {
-    const key = `${id}.html`;
-    const htmlContent = await downloadFromS3(key);
-
-    // Return the HTML content
-    return new NextResponse(htmlContent, {
+    const { stream, contentType } = await readFromS3(key);
+    return new NextResponse(stream as unknown as ReadableStream, {
       headers: {
-        "Content-Type": "text/html",
+        "Content-Type": contentType,
       },
     });
   } catch (error) {
-    console.error("Error fetching file:", error);
-    return NextResponse.json({ error: `Internal Server Error ${error}` }, { status: 500 });
+    console.error("Error serving file:", error);
+    return new NextResponse("File not found", { status: 404 });
   }
 }
