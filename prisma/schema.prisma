@@ -16,6 +16,7 @@ model User {
   image         String?
   accounts      Account[]
   sessions      Session[]
+  images        Image[]
 }
 
 model Account {
@@ -50,4 +51,21 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+model Image {
+  id         String   @id @default(uuid())
+  url        String
+  metadata   Json
+  prompt     String
+  model      String
+  creativity Int
+  steps      Int
+  seed       Int
+  refImage   String?
+  bookmark   Boolean  @default(false)
+  userId     String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

@@ -200,6 +200,7 @@ export function Playgrounds() {
           seed: image.seed,
           refImage: refImage || undefined,
           numberOfImages: 1,
+          userId: session?.user.id as string,
         })
       );
 

@@ -10,11 +10,14 @@ interface GenerateImageParams {
   model:string;
   refImage?: string;
   numberOfImages: number;
+  userId: string;
 }
 
 interface GeneratedImage {
+  id:string;
   url: string;
   metadata: Record<string, string>;
+  bookmark?:boolean;
 }
 
 interface ShareLinkParams {
@@ -53,7 +56,33 @@ export function useAIPlayground() {
     }
   };
 
-  const generateImage = async (params: GenerateImageParams): Promise<GeneratedImage> => {
+  const createImage = async (imageData: string) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch('/api/images', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: imageData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save image to database');
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      setError('Failed to save image to database');
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const generateImage = async (params: GenerateImageParams & { userId: string }): Promise<GeneratedImage> => {
     setIsLoading(true);
     setError(null);
     try {
@@ -70,7 +99,20 @@ export function useAIPlayground() {
       }
 
       const data = await response.json();
-      return data.image;
+      // Save the generated image to the database
+      const savedImage = await createImage(JSON.stringify({
+        url: data.image.url,
+        metadata: data.image.metadata,
+        prompt: params.prompt,
+        model: params.model,
+        creativity: params.creativity,
+        steps: params.steps,
+        seed: params.seed,
+        refImage: params.refImage || null,
+        userId: params.userId,
+        bookmark: false, // Default to unbookmarked
+      }));
+      return { ...data.image, id: savedImage.id };
     } catch (error) {
       setError('Failed to generate image');
       throw error;
@@ -78,6 +120,52 @@ export function useAIPlayground() {
       setIsLoading(false);
     }
   };
+
+  const deleteImage = async (id: string): Promise<void> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/images/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete image');
+      }
+    } catch (error) {
+      setError('Failed to delete image');
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const updateImage = async (id: string, updates: Partial<GeneratedImage>): Promise<GeneratedImage> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/images/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updates),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update image');
+      }
+
+      const updatedImage = await response.json();
+      return updatedImage;
+    } catch (error) {
+      setError('Failed to update image');
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
 
   const generateShareLink = async (params: ShareLinkParams): Promise<string> => {
     setIsLoading(true);
@@ -109,6 +197,8 @@ export function useAIPlayground() {
   return {
     enhancePrompt,
     generateImage,
+    updateImage,
+    deleteImage,
     generateShareLink,
     isLoading,
     error,
