@@ -98,6 +98,7 @@ export function useAIPlayground() {
       }
 
       const data = await response.json();
+      return data.image;
       // Save the generated image to the database
       const savedImage = await createImage(JSON.stringify({
         url: data.image.url,
