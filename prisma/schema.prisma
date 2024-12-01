@@ -61,7 +61,7 @@ model Image {
   model      String
   creativity Int
   steps      Int
-  seed       Int
+  seed       String
   refImage   String?
   bookmark   Boolean  @default(false)
   userId     String

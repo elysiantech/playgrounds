@@ -1,12 +1,13 @@
 'use client'
 
 import { useState } from 'react';
+import { ImageData } from '@/lib/types';
 
 interface GenerateImageParams {
   prompt: string;
   creativity: number;
   steps: number;
-  seed: number;
+  seed: string;
   model:string;
   refImage?: string;
   numberOfImages: number;
@@ -55,16 +56,17 @@ export function useAIPlayground() {
     }
   };
 
-  const createImage = async (imageData: string) => {
+  const createImage = async (imageData: GenerateImageParams & GeneratedImage) => {
     setIsLoading(true);
     setError(null);
+    const { url, prompt,creativity, steps, seed, model, refImage, metadata, bookmark } = imageData;
     try {
       const response = await fetch('/api/images', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: imageData,
+        body: JSON.stringify({ url, prompt, creativity, steps, seed, model, refImage, metadata, bookmark }),
       });
 
       if (!response.ok) {
@@ -98,19 +100,15 @@ export function useAIPlayground() {
       }
 
       const data = await response.json();
-      return data.image;
+      // return data.image;
       // Save the generated image to the database
-      const savedImage = await createImage(JSON.stringify({
+      const savedImage = await createImage({
+        ...params,
         url: data.image.url,
         metadata: data.image.metadata,
-        prompt: params.prompt,
-        model: params.model,
-        creativity: params.creativity,
-        steps: params.steps,
-        seed: params.seed,
-        refImage: params.refImage || null,
-        bookmark: false, // Default to unbookmarked
-      }));
+        bookmark: false, 
+        id:"",
+      });
       return { ...data.image, id: savedImage.id };
     } catch (error) {
       setError('Failed to generate image');
@@ -165,7 +163,7 @@ export function useAIPlayground() {
     }
   };
 
-  const getImages = async (): Promise<GeneratedImage[]> => {
+  const getImages = async (): Promise<ImageData[]> => {
     
     setIsLoading(true);
     setError(null);
@@ -176,8 +174,18 @@ export function useAIPlayground() {
         throw new Error('Failed to fetch images');
       }
   
-      const data = await response.json();
-      return data;
+      const generatedImages:ImageData[] = []
+      const images:[] = await response.json();
+      images.forEach((image) => {
+          const { id, url, prompt, model, creativity, steps, seed, refImage, metadata} = image
+          generatedImages.push({
+            id, url, prompt, model, creativity, steps, seed, metadata,
+            numberOfImages:1,
+            refImage: refImage?? undefined,
+          })
+        }
+      )
+      return generatedImages;
     } catch (error) {
       setError('Failed to fetch images');
       throw error;
@@ -214,6 +222,7 @@ export function useAIPlayground() {
   };
 
   return {
+    createImage,
     enhancePrompt,
     generateImage,
     updateImage,

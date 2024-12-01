@@ -81,7 +81,6 @@ export async function GET() {
       where: { userId },
       orderBy: { createdAt: "desc" },
     });
-
     return NextResponse.json(images);
   } catch (error) {
     console.error("Error fetching images:", error);

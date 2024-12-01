@@ -41,19 +41,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { toast } from '@/hooks/use-toast'
 import { useAIPlayground } from "@/hooks/useAIPlayground"
 import { processWithConcurrencyLimit } from '@/lib/utils'
-
-interface ImageData {
-  id?: string;
-  url: string;
-  prompt: string;
-  creativity: number;
-  steps: number;
-  seed: number;
-  numberOfImages: number;
-  bookmark?: boolean;
-  metadata: Record<string, string | number>;
-  model: string
-}
+import { ImageData } from '@/lib/types';
 
 export function Playgrounds() {
   const { data: session } = useSession()
@@ -73,63 +61,20 @@ export function Playgrounds() {
   const [showInfoPanel, setShowInfoPanel] = React.useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false)
   const [galleryHeight, setGalleryHeight] = React.useState(120);
-  const { enhancePrompt, generateImage, updateImage, deleteImage, generateShareLink } = useAIPlayground()
+  const { enhancePrompt, generateImage, getImages, updateImage, deleteImage, generateShareLink } = useAIPlayground()
 
   React.useEffect(() => {
     const savedTheme = localStorage.getItem('theme')
     if (savedTheme) {
       setTheme(savedTheme)
     }
-  }, [])
-
-  React.useEffect(() => {
-    // Load generated images from sessionStorage on component mount
-    const savedGeneratedImages = sessionStorage.getItem('generatedImages');
-    if (savedGeneratedImages) {
-      const parsedImages = JSON.parse(savedGeneratedImages) as ImageData[];
-      const cleanedGeneratedImages = parsedImages.map((image) => { 
-        const urlObj = new URL(image.url, window.location.origin);
-        const pathParts = urlObj.pathname.split("/");
-        const key = pathParts[pathParts.length - 1];
-        return { ...image, url: `/share/${key}`}
-      });
-      setGeneratedImages(cleanedGeneratedImages);
-    }
-
-    // Load bookmarked images from localStorage on component mount
-    const savedBookmarks = localStorage.getItem('bookmarkedImages');
-    if (savedBookmarks) {
-      const bookmarkedImages = (JSON.parse(savedBookmarks) as ImageData[]).map((bookmark) => ({
-        ...bookmark,
-        bookmark: true,
-      }));
-      setGeneratedImages((prev) => {
-        const combined = [...prev];
-        bookmarkedImages.forEach((bookmark) => {
-          const existingIndex = combined.findIndex(
-            (image) => image.url === bookmark.url
-          );
-          if (existingIndex !== -1) {
-            combined[existingIndex] = { ...combined[existingIndex], bookmark: true };
-          } else {
-            combined.push(bookmark);
-          }
-        });
-        return combined;
-      });
-    }
+    getImages().then((images) => {
+      const parsedImages = images.map((image) => { 
+            return { ...image, url: `/share/${image.url}`}
+          });
+      setGeneratedImages(parsedImages)
+    })
   }, []);
-
-  React.useEffect(() => {
-    // Save generated images to sessionStorage whenever they change
-    sessionStorage.setItem('generatedImages', JSON.stringify(generatedImages));
-  }, [generatedImages]);
-
-  React.useEffect(() => {
-    // Save bookmarked images to localStorage whenever they change
-    const bookmarkedImages = generatedImages.filter((image) => image.bookmark);
-    localStorage.setItem('bookmarkedImages', JSON.stringify(bookmarkedImages));
-  }, [generatedImages]);
 
   React.useEffect(() => {
     const promptParam = searchParams.get('prompt')
@@ -184,7 +129,7 @@ export function Playgrounds() {
         model,
         creativity,
         steps,
-        seed: uniqueSeed,
+        seed: String(uniqueSeed),
         numberOfImages,
         metadata: {}
       };
@@ -314,19 +259,21 @@ export function Playgrounds() {
   }
 
   const handleDeleteImage = async (imageToDelete: ImageData) => {
-    setGeneratedImages(prev => prev.filter(img => img.url !== imageToDelete.url))
-    if (selectedImage && selectedImage.url === imageToDelete.url) {
-      let nextImage = null;
-      generatedImages.forEach((image: ImageData, index: number) => {
-        if (image.url === imageToDelete.url) {
-          nextImage = (index + 1) <= generatedImages.length ? generatedImages[index + 1] : null
-          return;
-        }
-      })
-      setSelectedImage(nextImage)
-    }
     try {
       await deleteImage(imageToDelete.id!);
+      setGeneratedImages(prev => prev.filter(img => img.id !== imageToDelete.id))
+      if (selectedImage && selectedImage.id === imageToDelete.id) {
+        let nextImage = null;
+        generatedImages.forEach((image: ImageData, index: number) => {
+          if (image.id === imageToDelete.id) {
+            nextImage = (index + 1) <= generatedImages.length ? generatedImages[index + 1] : null
+            return;
+          }
+        })
+        setSelectedImage(nextImage)
+      }
+      
+
       toast({
         title: "Image Deleted",
         description: "The image has been deleted successfully.",
