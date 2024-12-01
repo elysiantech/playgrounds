@@ -59,14 +59,14 @@ export function useAIPlayground() {
   const createImage = async (imageData: GenerateImageParams & GeneratedImage) => {
     setIsLoading(true);
     setError(null);
-    const { url, prompt,creativity, steps, seed, model, refImage, metadata, bookmark } = imageData;
+    const { url, prompt,creativity, steps, seed, model, metadata, bookmark } = imageData;
     try {
       const response = await fetch('/api/images', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ url, prompt, creativity, steps, seed, model, refImage, metadata, bookmark }),
+        body: JSON.stringify({ url, prompt, creativity, steps, seed, model, metadata, bookmark }),
       });
 
       if (!response.ok) {

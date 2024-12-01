@@ -32,7 +32,7 @@ async function together (request: Request) {
     width: 1024, 
     height: 768, 
     steps: steps,
-    seed: params.seed,
+    seed: Number(params.seed),
     n: 1, // Number of images to generate
     response_format: 'b64_json', // Request base64 response
   };
@@ -103,7 +103,7 @@ async function backend(request: Request) {
     prompt_strength: (params.prompt && params.refImage)
       ? (params.creativity - 1) / 9
       : undefined,
-    seed: params.seed,
+    seed: Number(params.seed),
     width: 1024, 
     height: 1024,
   };
