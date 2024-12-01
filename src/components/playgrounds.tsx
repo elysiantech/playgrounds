@@ -61,7 +61,7 @@ export function Playgrounds() {
   const [showInfoPanel, setShowInfoPanel] = React.useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false)
   const [galleryHeight, setGalleryHeight] = React.useState(120);
-  const { enhancePrompt, generateImage, getImages, updateImage, deleteImage, generateShareLink } = useAIPlayground()
+  const { enhancePrompt, generateImage, getImages, updateImage, deleteImage, upscaleImage, generateShareLink } = useAIPlayground()
 
   React.useEffect(() => {
     const savedTheme = localStorage.getItem('theme')
@@ -177,6 +177,42 @@ export function Playgrounds() {
       })
     }
   }
+  const handleUpscaleImage = async (image:ImageData) => {
+
+    const newImage: ImageData = { 
+      ...image,
+      id: undefined,
+      url: `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='512' height='512' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' font-size='24' text-anchor='middle' dy='.3em' fill='%23999'%3EUpscaling...%3C/text%3E%3C/svg%3E`,
+    };
+
+    try {
+      // Temporarily set placeholder images
+      setGeneratedImages(prev => [newImage, ...prev]);
+      setSelectedImage(newImage);
+      
+      const upscaledImage = await upscaleImage(image.id!);
+      
+      // Update newImages with the generated URLs
+      newImage.id = upscaledImage.id;
+      newImage.url=`/share/${upscaledImage.url}`;
+      newImage.metadata =  upscaledImage.metadata
+
+      // Update the state with the generated images
+      setGeneratedImages(prev => [newImage, ...prev.slice(1)]);
+      setSelectedImage(newImage);
+
+    } catch (error) {
+      console.error('Error generating image:', error)
+      // Remove set placeholder image
+      setGeneratedImages(prev => [...prev.slice(1)]);
+      setSelectedImage(null);
+      toast({
+        title: "Error",
+        description: "Failed to upscale image. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
 
   const handleImageAction = async (action: string) => {
     switch (action) {
@@ -245,8 +281,12 @@ export function Playgrounds() {
         setShowInfoPanel(!showInfoPanel)
         break;
       case 'upscale':
-      case 'make3D':
       case 'aiExpand':
+        if (selectedImage) {
+          await handleUpscaleImage(selectedImage)
+        }
+        break;
+      case 'make3D':
       case 'removeBackground':
         toast({
           title: "Feature not implemented",

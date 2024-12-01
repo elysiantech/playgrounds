@@ -118,6 +118,30 @@ export function useAIPlayground() {
     }
   };
 
+  const upscaleImage = async (id: string): Promise<GeneratedImage> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`/api/images/${id}/upscale`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ factor:8 }),
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to upscale image');
+      }
+  
+      const newImage = await response.json();
+      return newImage;
+    } catch (error) {
+      setError('Failed to upscale image');
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const deleteImage = async (id: string): Promise<void> => {
     setIsLoading(true);
     setError(null);
@@ -227,6 +251,7 @@ export function useAIPlayground() {
     generateImage,
     updateImage,
     deleteImage,
+    upscaleImage,
     getImages,
     generateShareLink,
     isLoading,
