@@ -158,7 +158,7 @@ export function Playgrounds() {
       // Update newImages with the generated URLs
       const updatedImages = newImages.map((image, index) => ({
         ...image,
-        url: generatedImages[index].url,
+        url: `/share/${generatedImages[index].url}`,
         metadata: generatedImages[index].metadata
       }));
 
@@ -220,7 +220,7 @@ export function Playgrounds() {
       case 'bookmark':
         if (selectedImage) {
           const updatedImages = generatedImages.map(image =>
-            image.url === selectedImage.url ? { ...image, bookmark: !image.bookmark } : image
+            image.id === selectedImage.id ? { ...image, bookmark: !image.bookmark } : image
           );
           setGeneratedImages(updatedImages);
           setSelectedImage({ ...selectedImage, bookmark: !selectedImage.bookmark });
@@ -732,7 +732,7 @@ export function Playgrounds() {
                     size="icon"
                     className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-background/40 backdrop-blur-md rounded-full"
                     onClick={() => {
-                      const currentIndex = generatedImages.findIndex(img => img.url === selectedImage.url);
+                      const currentIndex = generatedImages.findIndex(img => img.id === selectedImage.id);
                       if (currentIndex > 0) {
                         setSelectedImage(generatedImages[currentIndex - 1]);
                       }
@@ -747,7 +747,7 @@ export function Playgrounds() {
                     size="icon"
                     className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-background/40 backdrop-blur-md rounded-full"
                     onClick={() => {
-                      const currentIndex = generatedImages.findIndex(img => img.url === selectedImage.url);
+                      const currentIndex = generatedImages.findIndex(img => img.id === selectedImage.id);
                       if (currentIndex < generatedImages.length - 1) {
                         setSelectedImage(generatedImages[currentIndex + 1]);
                       }
