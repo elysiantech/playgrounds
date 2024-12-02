@@ -95,6 +95,10 @@ export function Playgrounds() {
     if (numberOfImagesParam) setNumberOfImages(parseInt(numberOfImagesParam))
   }, [searchParams])
 
+  const customLoader = ({ src, width, quality }:{src:string, width:number, quality?:number}) => {
+    return `${src}?width=${width}&quality=${quality || 75}`;
+  };
+
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
@@ -647,6 +651,7 @@ export function Playgrounds() {
               {selectedImage ? (
                 <div className="relative w-full h-full max-w-full max-h-full overflow-hidden" style={{ height: '100%' }}>
                   <Image
+                    // loader={customLoader}
                     src={selectedImage.url}
                     alt="Generated image"
                     className="object-contain rounded-lg shadow-lg"
@@ -822,6 +827,7 @@ export function Playgrounds() {
                 {generatedImages.map((image, index) => (
                   <div key={index} className="relative group flex-shrink-0">
                     <Image
+                      loader={customLoader}
                       src={image.url}
                       alt={`Generated image ${index + 1}`}
                       width={100}
@@ -829,7 +835,7 @@ export function Playgrounds() {
                       className="rounded-md cursor-pointer hover:opacity-80 transition-opacity"
                       onClick={() => setSelectedImage(image)}
                       style={{ height: `${galleryHeight - 16}px`, width: 'auto' }}
-                      unoptimized
+                      //unoptimized
                     />
                   </div>
                 ))}
