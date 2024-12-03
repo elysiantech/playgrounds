@@ -20,12 +20,6 @@ interface GeneratedImage {
   bookmark?:boolean;
 }
 
-interface ShareLinkParams {
-  imageUrl: string;
-  redirectUrl: string;
-  description: string;
-}
-
 export function useAIPlayground() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -218,33 +212,6 @@ export function useAIPlayground() {
     }
   };
 
-  const generateShareLink = async (params: ShareLinkParams): Promise<string> => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await fetch('/api/share', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(params),
-      });
-
-      if (!response.ok) {
-        const errorDetails = await response.json();
-        throw new Error(errorDetails.error || 'Failed to create shareable link.');
-      }
-
-      const data = await response.json();
-      return data.url;
-    } catch (error) {
-      setError('Failed to generate share link');
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return {
     createImage,
     enhancePrompt,
@@ -253,7 +220,6 @@ export function useAIPlayground() {
     deleteImage,
     upscaleImage,
     getImages,
-    generateShareLink,
     isLoading,
     error,
   };

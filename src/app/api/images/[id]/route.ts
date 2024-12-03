@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { deleteFromS3 } from "@/lib/aws"
 import { NextRequest, NextResponse } from "next/server";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {  
@@ -22,12 +23,26 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   try {
     const id = (await params).id;
     
+    const image = await prisma.image.findUnique({
+      where: { id },
+    });
+
+    if (!image || !image.url) {
+      return NextResponse.json({ error: "Image not found" }, { status: 404 });
+    }
+
+    const url = new URL(image.url);
+    const key = url.pathname.startsWith("/") ? url.pathname.slice(1) : url.pathname;
+    await deleteFromS3(key);
+
+    // Delete the record from the database
     await prisma.image.delete({
       where: { id },
     });
 
     return NextResponse.json({ message: "Image deleted successfully" });
   } catch (error) {
-    return NextResponse.json({ error: `Failed to delete image$ ${error}` }, { status: 500 });
+    console.error("Error deleting image:", error);
+    return NextResponse.json({ error: `Failed to delete image: ${error}` }, { status: 500 });
   }
 }

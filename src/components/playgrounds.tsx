@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { Moon, Sun, LogOut, Upload, X, Sparkles, Trash2, Download, RefreshCw, Bookmark, BookmarkCheck, Share2 as Share, Menu, Settings2 as Edit, Expand, Layers, ImageOff, ChevronLeft, ChevronRight, Info } from 'lucide-react'
+import { Moon, Sun, LogOut, Upload, X, Sparkles, Trash2, Download, RefreshCw, Bookmark, BookmarkCheck, Menu, Settings2 as Edit, Expand, Layers, ImageOff, ChevronLeft, ChevronRight, Info } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import Image from 'next/image'
 import { useSession, signOut } from "next-auth/react"
@@ -42,6 +42,8 @@ import { toast } from '@/hooks/use-toast'
 import { useAIPlayground } from "@/hooks/useAIPlayground"
 import { processWithConcurrencyLimit } from '@/lib/utils'
 import { ImageData } from '@/lib/types';
+import { SharePopover } from '@/components/share'
+
 
 export function Playgrounds() {
   const { data: session } = useSession()
@@ -61,7 +63,7 @@ export function Playgrounds() {
   const [showInfoPanel, setShowInfoPanel] = React.useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false)
   const [galleryHeight, setGalleryHeight] = React.useState(120);
-  const { enhancePrompt, generateImage, getImages, updateImage, deleteImage, upscaleImage, generateShareLink } = useAIPlayground()
+  const { enhancePrompt, generateImage, getImages, updateImage, deleteImage, upscaleImage } = useAIPlayground()
 
   React.useEffect(() => {
     const savedTheme = localStorage.getItem('theme')
@@ -234,27 +236,6 @@ export function Playgrounds() {
       case 'delete':
         if (selectedImage) {
           handleDeleteImage(selectedImage)
-        }
-        break;
-      case 'share':
-        if (selectedImage) {
-          const params = new URLSearchParams({
-            prompt: selectedImage.prompt,
-            model: selectedImage.model,
-            creativity: selectedImage.creativity.toString(),
-            steps: selectedImage.steps.toString(),
-            seed: String(selectedImage.seed),
-            numberOfImages: "1",//selectedImage.numberOfImages.toString(),
-          })
-          const redirectUrl = `${window.location.origin}${window.location.pathname}?${params.toString()}`
-          generateShareLink({ imageUrl: selectedImage.url, redirectUrl, description: "Playgrounds AI-generated image." })
-            .then((url: string) => {
-              navigator.clipboard.writeText(url)
-              toast({
-                title: "URL Copied",
-                description: "The share URL has been copied to your clipboard.",
-              })
-            })
         }
         break;
       case 'bookmark':
@@ -662,6 +643,7 @@ export function Playgrounds() {
                   {showTools && selectedImage && (
                     <>
                       <div className="absolute top-2 right-2 bg-background/40 backdrop-blur-md rounded-lg p-2 flex space-x-2">
+                        <SharePopover url={`${window.location.origin}${window.location.pathname}share/${selectedImage.id}`}/>
                         <Popover>
                           <PopoverTrigger asChild>
                             <Button variant="ghost" size="icon" className="text-foreground/90 hover:text-foreground">
@@ -691,7 +673,6 @@ export function Playgrounds() {
                         </Popover>
                         <TooltipProvider>
                           {[
-                            { icon: Share, label: 'Share', action: 'share' },
                             { icon: Download, label: 'Download', action: 'download' },
                             { icon: RefreshCw, label: 'Remix', action: 'remix' },
                             { icon: Info, label: 'Info', action: 'info' },

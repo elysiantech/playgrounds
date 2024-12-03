@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { uploadBase64ToS3 } from '@/lib/aws';
+import { uploadToS3 } from '@/lib/aws';
 import { v4 as uuidv4 } from 'uuid';
 
 interface GenerateImageParams {
@@ -64,7 +64,8 @@ async function together (request: Request) {
 
     // Upload to S3 and get the URL
     const filename = `${uuidv4()}.png`;
-    await uploadBase64ToS3(base64Image, filename);
+    const buffer = Buffer.from(base64Image, "base64");
+    await uploadToS3(buffer, filename);
 
     // Return the image URL
     return NextResponse.json({
