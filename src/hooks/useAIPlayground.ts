@@ -195,9 +195,9 @@ export function useAIPlayground() {
       const generatedImages:ImageData[] = []
       const images:[] = await response.json();
       images.forEach((image) => {
-          const { id, url, prompt, model, creativity, steps, seed, refImage, metadata} = image
+          const { id, url, prompt, model, creativity, steps, seed, refImage, metadata, bookmark} = image
           generatedImages.push({
-            id, url, prompt, model, creativity, steps, seed, metadata,
+            id, url, prompt, model, creativity, steps, seed, metadata, bookmark,
             numberOfImages:1,
             refImage: refImage?? undefined,
           })

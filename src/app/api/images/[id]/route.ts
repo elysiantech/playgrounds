@@ -23,22 +23,14 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   try {
     const id = (await params).id;
     
-    const image = await prisma.image.findUnique({
-      where: { id },
-    });
+    const image = await prisma.image.findUnique({ where: { id },});
 
     if (!image || !image.url) {
       return NextResponse.json({ error: "Image not found" }, { status: 404 });
     }
-
-    const url = new URL(image.url);
-    const key = url.pathname.startsWith("/") ? url.pathname.slice(1) : url.pathname;
-    await deleteFromS3(key);
-
+    await deleteFromS3(image.url);
     // Delete the record from the database
-    await prisma.image.delete({
-      where: { id },
-    });
+    await prisma.image.delete({where: { id },});
 
     return NextResponse.json({ message: "Image deleted successfully" });
   } catch (error) {
