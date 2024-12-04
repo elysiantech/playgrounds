@@ -11,10 +11,11 @@ import { Sun, Moon, LogOut, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 type HeaderProps = {
-  toggleSidebar?: () => void; // Optional prop for toggling the sidebar in mobile view
+  transparent?: boolean;
+  toggleSidebar?: () => void; 
 };
 
-export function Header({ toggleSidebar }: HeaderProps) {
+export function Header({ toggleSidebar, transparent = false }: HeaderProps) {
   const { data: session } = useSession();
   const { setTheme, theme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -25,12 +26,12 @@ export function Header({ toggleSidebar }: HeaderProps) {
   }, []);
 
   return (
-    <header className="h-16 border-b flex items-center justify-between px-4">
+    <header className={`h-16 flex items-center justify-between px-4 ${transparent ? 'fixed top-0 left-0 right-0 z-50 bg-transparent' : 'border-b'}`}>
       {/* Mobile Header */}
       <div className="md:hidden flex items-center space-x-4">
         {toggleSidebar && (
           <Button variant="ghost" size="icon" onClick={toggleSidebar}>
-            <Menu className="h-6 w-6" />
+            <Menu className={`h-6 w-6 ${transparent ? 'text-white' : ''}`} />
           </Button>
         )}
         <Link href="/" className="flex items-center space-x-2">
@@ -45,7 +46,9 @@ export function Header({ toggleSidebar }: HeaderProps) {
           />
           )}
         </div>
-        <h1 className="text-xl font-semibold">Playgrounds</h1>
+        <h1 className={`text-xl font-semibold ${transparent ? 'text-white' : ''}`}>
+        Playgrounds
+        </h1>
         </Link>
       </div>
 
@@ -63,14 +66,16 @@ export function Header({ toggleSidebar }: HeaderProps) {
           />
         )}
         </div>
-        <h1 className="text-xl font-bold">Playgrounds</h1>
+        <h1 className={`text-xl font-bold ${transparent ? 'text-white' : ''}`}>
+        Playgrounds
+        </h1>
         </Link>
       </div>
 
       {session?.user && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+            <Button variant="ghost" className={`relative h-8 w-8 rounded-full ${transparent ? 'absolute right-4 top-4' : ''}`}>
               <Avatar className="h-8 w-8">
                 <AvatarImage src={session.user.image || ''} alt={session.user.name || ''} />
                 <AvatarFallback>{session.user.name?.charAt(0) || 'U'}</AvatarFallback>
