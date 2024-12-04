@@ -1,20 +1,12 @@
 'use client'
 
 import * as React from 'react'
-import { Moon, Sun, LogOut, Upload, X, Sparkles, Trash2, Download, RefreshCw, Bookmark, BookmarkCheck, Menu, Settings2 as Edit, Expand, Layers, ImageOff, ChevronLeft, ChevronRight, Info } from 'lucide-react'
+import { Upload, X, Sparkles, Trash2, Download, RefreshCw, Bookmark, BookmarkCheck, Settings2 as Edit, Expand, Layers, ImageOff, ChevronLeft, ChevronRight, Info } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import Image from 'next/image'
-import { useSession, signOut } from "next-auth/react"
 import { useSearchParams } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Slider } from '@/components/ui/slider'
@@ -34,7 +26,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Card, CardContent } from '@/components/ui/card'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -43,10 +34,10 @@ import { useAIPlayground } from "@/hooks/useAIPlayground"
 import { processWithConcurrencyLimit } from '@/lib/utils'
 import { ImageData } from '@/lib/types';
 import { SharePopover } from '@/components/share'
+import { Header } from '@/components/header';
 
 
 export function Playgrounds() {
-  const { data: session } = useSession()
   const { setTheme } = useTheme()
   const searchParams = useSearchParams()
   const [prompt, setPrompt] = React.useState('')
@@ -359,59 +350,6 @@ export function Playgrounds() {
 
   return (
     <div className="flex flex-col md:flex-row h-screen bg-background">
-      {/* Mobile header */}
-      <header className="md:hidden h-16 border-b flex items-center justify-between px-4">
-        <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="icon" onClick={toggleSidebar}>
-            <Menu className="h-6 w-6" />
-          </Button>
-          <div className="w-8 h-8">
-            <Image
-              src={'/logo-white-black.png'/*theme === 'dark' ? '/logo-white-black.png' : '/logo-black-white.png'*/}
-              alt="Playgrounds Logo"
-              width={32}
-              height={32}
-              className="rounded-md"
-            />
-          </div>
-          <h1 className="text-xl font-semibold">Playgrounds</h1>
-        </div>
-        {session?.user && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={session.user.image || ''} alt={session.user.name || ''} />
-                  <AvatarFallback>{session.user.name?.charAt(0) || 'U'}</AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-              <DropdownMenuItem className="flex items-center">
-                <Avatar className="mr-2 h-8 w-8">
-                  <AvatarImage src={session.user.image || ''} alt={session.user.name || ''} />
-                  <AvatarFallback>{session.user.name?.charAt(0) || 'U'}</AvatarFallback>
-                </Avatar>
-                <span>{session.user.email || ''}</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => { setTheme('light'); localStorage.setItem('theme', 'light') }}>
-                <Sun className="mr-2 h-4 w-4" />
-                <span>Light mode</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => { setTheme('dark'); localStorage.setItem('theme', 'dark') }}>
-                <Moon className="mr-2 h-4 w-4" />
-                <span>Dark mode</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => signOut()}>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
-      </header>
-
       {/* Sidebar */}
       <aside className={`w-full md:w-64 border-r p-4 flex flex-col space-y-4 ${isSidebarOpen ? 'block' : 'hidden'} md:block`}>
         <Card className="w-full">
@@ -569,56 +507,7 @@ export function Playgrounds() {
 
       {/* Main content area */}
       <div className="flex-1 flex flex-col w-full md:w-auto">
-        {/* Desktop header */}
-        <header className="hidden md:flex h-16 border-b items-center justify-between px-4">
-          <div className="flex items-center space-x-4">
-            <div className="w-8 h-8">
-              <Image
-                src={'/logo-white-black.png'/*theme === 'dark' ? '/logo-white-black.png' : '/logo-black-white.png'*/}
-                alt="Playgrounds Logo"
-                width={32}
-                height={32}
-                className="rounded-md"
-              />
-            </div>
-            <h1 className="text-xl font-semibold">Playgrounds</h1>
-          </div>
-          {session?.user && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={session.user.image || ''} alt={session.user.name || ''} />
-                    <AvatarFallback>{session.user.name?.charAt(0) || 'U'}</AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
-                <DropdownMenuItem className="flex items-center">
-                  <Avatar className="mr-2 h-8 w-8">
-                    <AvatarImage src={session.user.image || ''} alt={session.user.name || ''} />
-                    <AvatarFallback>{session.user.name?.charAt(0) || 'U'}</AvatarFallback>
-                  </Avatar>
-                  <span>{session.user.email || ''}</span>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setTheme('light')}>
-                  <Sun className="mr-2 h-4 w-4" />
-                  <span>Light mode</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTheme('dark')}>
-                  <Moon className="mr-2 h-4 w-4" />
-                  <span>Dark mode</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => signOut()}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Log out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-        </header>
-
+      <Header toggleSidebar={toggleSidebar} />
         {/* Main content */}
         <main className="flex-1 flex flex-col overflow-hidden">
           {/* Selected image area */}
