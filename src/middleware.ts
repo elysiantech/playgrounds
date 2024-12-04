@@ -4,13 +4,14 @@ import { NextRequest, NextResponse } from "next/server";
 export default async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
     const excludePaths = [
-        '/api/auth',
         '/_next/static',
         '/_next/image',
         '/favicon.ico',
         '/signin',
         '/share',
-        '/api/public'
+        '/images',
+        '/api/auth',
+        '/api/public',
     ];
     if (excludePaths.some(path => pathname.startsWith(path))||
         ['.png', '.svg'].some(path => pathname.endsWith(path))) {

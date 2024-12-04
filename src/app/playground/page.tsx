@@ -538,7 +538,7 @@ function Playground() {
                   {showTools && selectedImage && (
                     <>
                       <div className="absolute top-2 right-2 bg-background/40 backdrop-blur-md rounded-lg p-2 flex space-x-2">
-                        <SharePopover url={`${window.location.origin}${window.location.pathname}share/${selectedImage.id}`}/>
+                        <SharePopover url={`${window.location.origin}/images/${selectedImage.id}`}/>
                         <Popover>
                           <PopoverTrigger asChild>
                             <Button variant="ghost" size="icon" className="text-foreground/90 hover:text-foreground">
