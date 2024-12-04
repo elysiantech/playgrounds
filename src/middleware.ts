@@ -10,6 +10,7 @@ export default async function middleware(request: NextRequest) {
         '/favicon.ico',
         '/signin',
         '/share',
+        '/api/public'
     ];
     if (excludePaths.some(path => pathname.startsWith(path))||
         ['.png', '.svg'].some(path => pathname.endsWith(path))) {

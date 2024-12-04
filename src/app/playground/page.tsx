@@ -37,7 +37,7 @@ import { SharePopover } from '@/components/share'
 import { Header } from '@/components/header';
 
 
-export function Playgrounds() {
+export default function Playgrounds() {
   const { setTheme } = useTheme()
   const searchParams = useSearchParams()
   const [prompt, setPrompt] = React.useState('')
@@ -521,7 +521,6 @@ export function Playgrounds() {
               {selectedImage ? (
                 <div className="relative w-full h-full max-w-full max-h-full overflow-hidden" style={{ height: '100%' }}>
                   <Image
-                    // loader={customLoader}
                     src={selectedImage.url}
                     alt="Generated image"
                     className="object-contain rounded-lg shadow-lg"

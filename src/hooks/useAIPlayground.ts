@@ -181,12 +181,17 @@ export function useAIPlayground() {
     }
   };
 
-  const getImages = async (): Promise<ImageData[]> => {
-    
+  const getImages = async (isPublic: boolean=false, offset?: number, limit?: number): Promise<ImageData[]> => {
     setIsLoading(true);
     setError(null);
+  
     try {
-      const response = await fetch(`/api/images`);
+      // Determine the API route based on whether the request is public
+      const apiRoute = isPublic
+        ? `/api/public/images?${new URLSearchParams({ ...(offset && { offset: offset.toString() }), ...(limit && { limit: limit.toString() }) })}`
+        : `/api/images`;
+  
+      const response = await fetch(apiRoute);
   
       if (!response.ok) {
         throw new Error('Failed to fetch images');

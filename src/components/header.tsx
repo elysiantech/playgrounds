@@ -1,4 +1,6 @@
-import * as React from 'react';
+'use client';
+
+import React, { useEffect, useState } from 'react';
 import { useTheme } from 'next-themes';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
@@ -15,6 +17,12 @@ type HeaderProps = {
 export function Header({ toggleSidebar }: HeaderProps) {
   const { data: session } = useSession();
   const { setTheme, theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <header className="h-16 border-b flex items-center justify-between px-4">
@@ -27,6 +35,7 @@ export function Header({ toggleSidebar }: HeaderProps) {
         )}
         <Link href="/" className="flex items-center space-x-2">
         <div className="w-8 h-8">
+        {mounted && (
           <Image
             src={theme === 'dark' ? '/logo-white-black.png' : '/logo-black-white.png'}
             alt="Playgrounds Logo"
@@ -34,6 +43,7 @@ export function Header({ toggleSidebar }: HeaderProps) {
             height={32}
             className="rounded-md"
           />
+          )}
         </div>
         <h1 className="text-xl font-semibold">Playgrounds</h1>
         </Link>
@@ -43,6 +53,7 @@ export function Header({ toggleSidebar }: HeaderProps) {
       <div className="hidden md:flex items-center space-x-4">
       <Link href="/" className="flex items-center space-x-2">
         <div className="w-8 h-8">
+        {mounted && (
           <Image
             src={theme === 'dark' ? '/logo-white-black.png' : '/logo-black-white.png'}
             alt="Playgrounds Logo"
@@ -50,6 +61,7 @@ export function Header({ toggleSidebar }: HeaderProps) {
             height={32}
             className="rounded-md"
           />
+        )}
         </div>
         <h1 className="text-xl font-bold">Playgrounds</h1>
         </Link>

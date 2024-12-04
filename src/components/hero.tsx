@@ -16,7 +16,7 @@ export function Hero() {
       </div>
       <div className="relative z-10 text-center">
         <h1 className="text-4xl font-bold mb-4">Welcome to Image Playgrounds</h1>
-        <p className="text-xl mb-8">Explore, remix, and create amazing images with AI</p>
+        <p className="text-xl mb-8">Create and remix amazing images with AI</p>
         <Link
           href="/playground"
           className="px-6 py-3 text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors text-lg font-semibold"
