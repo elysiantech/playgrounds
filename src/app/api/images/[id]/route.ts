@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { deleteFromS3 } from "@/lib/aws"
+import storage  from '@/lib/storage'
 import { NextRequest, NextResponse } from "next/server";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {  
@@ -28,7 +28,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     if (!image || !image.url) {
       return NextResponse.json({ error: "Image not found" }, { status: 404 });
     }
-    await deleteFromS3(image.url);
+    await storage.deleteObject(image.url);
     // Delete the record from the database
     await prisma.image.delete({where: { id },});
 

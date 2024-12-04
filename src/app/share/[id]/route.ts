@@ -1,7 +1,7 @@
 import { NextResponse, NextRequest } from "next/server";
 import sharp from "sharp";
 import { prisma } from "@/lib/prisma";
-import { readFromS3 } from '@/lib/aws'
+import storage  from '@/lib/storage'
 import { Readable } from "stream";
 
 export async function GET(req: NextRequest, { params }: {  params: Promise<{ id: string }> }) {
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest, { params }: {  params: Promise<{ id:
   const height = searchParams.get("height") ? parseInt(searchParams.get("height") || "0", 10) : null;
 
   try {
-    const { stream, contentType } = await readFromS3(key);
+    const { stream, contentType } = await storage.getObject(key);
     const headers =  {
       "Content-Type": contentType,
       "Cache-Control": "public, max-age=31536000, immutable", // Cache forever for resized images
