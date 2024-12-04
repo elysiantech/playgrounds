@@ -97,7 +97,7 @@ const LazyImage: React.FC<LazyImageProps> = ({ image, index, hoveredIndex, setHo
     triggerOnce: true,
     rootMargin: '200px 0px',
   });
-  
+  const prompt = image.prompt.replace(/^["\s]+|["\s]+$/g, '')
   const width = 500;//Math.floor(Math.random() * (800 - 200) + 200); 
   const height = 500;//Math.floor(width * (Math.random() * 0.5 + 0.75)); 
   const customLoader = ({ src, width, quality }:{src:string, width:number, quality?:number}) => {
@@ -126,7 +126,9 @@ const LazyImage: React.FC<LazyImageProps> = ({ image, index, hoveredIndex, setHo
           />
           {hoveredIndex === index && (
             <div className="absolute inset-0 flex flex-col justify-between p-4 bg-black bg-opacity-50 transition-opacity duration-300 ease-in-out">
-              <p className="text-white text-xs md:text-sm">{image.prompt}</p>
+              <p className="text-white text-xs md:text-sm">
+                {prompt.length > 100 ? `${prompt.slice(0, 100)}...` : prompt}
+              </p>
               <p className="text-white text-xs md:text-sm self-start">Remix</p>
             </div>
           )}
