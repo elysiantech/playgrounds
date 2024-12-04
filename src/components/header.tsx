@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { useTheme } from 'next-themes';
 import { useSession, signOut } from 'next-auth/react';
+import Link from 'next/link';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Image from 'next/image';
@@ -24,6 +25,7 @@ export function Header({ toggleSidebar }: HeaderProps) {
             <Menu className="h-6 w-6" />
           </Button>
         )}
+        <Link href="/" className="flex items-center space-x-2">
         <div className="w-8 h-8">
           <Image
             src={theme === 'dark' ? '/logo-white-black.png' : '/logo-black-white.png'}
@@ -34,10 +36,12 @@ export function Header({ toggleSidebar }: HeaderProps) {
           />
         </div>
         <h1 className="text-xl font-semibold">Playgrounds</h1>
+        </Link>
       </div>
 
       {/* Desktop Header */}
       <div className="hidden md:flex items-center space-x-4">
+      <Link href="/" className="flex items-center space-x-2">
         <div className="w-8 h-8">
           <Image
             src={theme === 'dark' ? '/logo-white-black.png' : '/logo-black-white.png'}
@@ -48,6 +52,7 @@ export function Header({ toggleSidebar }: HeaderProps) {
           />
         </div>
         <h1 className="text-xl font-bold">Playgrounds</h1>
+        </Link>
       </div>
 
       {session?.user && (
