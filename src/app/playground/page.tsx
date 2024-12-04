@@ -1,6 +1,6 @@
 'use client'
 
-import * as React from 'react'
+import React, {Suspense} from 'react'
 import { Upload, X, Sparkles, Trash2, Download, RefreshCw, Bookmark, BookmarkCheck, Settings2 as Edit, Expand, Layers, ImageOff, ChevronLeft, ChevronRight, Info } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import Image from 'next/image'
@@ -36,8 +36,15 @@ import { ImageData } from '@/lib/types';
 import { SharePopover } from '@/components/share'
 import { Header } from '@/components/header';
 
+export default function PlaygroundPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <Playground />
+    </Suspense>
+  );
+}
 
-export default function Playgrounds() {
+function Playground() {
   const { setTheme } = useTheme()
   const searchParams = useSearchParams()
   const [prompt, setPrompt] = React.useState('')
