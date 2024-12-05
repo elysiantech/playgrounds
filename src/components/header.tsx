@@ -39,7 +39,7 @@ export function Header({ toggleSidebar, transparent = false }: HeaderProps) {
         {mounted && (
           <Image
             src={theme === 'dark' ? '/logo-white-black.png' : '/logo-black-white.png'}
-            alt="Playgrounds Logo"
+            alt="Origam.ai Logo"
             width={32}
             height={32}
             className="rounded-md"
@@ -47,7 +47,7 @@ export function Header({ toggleSidebar, transparent = false }: HeaderProps) {
           )}
         </div>
         <h1 className={`text-xl font-semibold ${transparent ? 'text-white' : ''}`}>
-        Playgrounds
+        Origam.ai
         </h1>
         </Link>
       </div>
@@ -59,7 +59,7 @@ export function Header({ toggleSidebar, transparent = false }: HeaderProps) {
         {mounted && (
           <Image
             src={theme === 'dark' ? '/logo-white-black.png' : '/logo-black-white.png'}
-            alt="Playgrounds Logo"
+            alt="Origam.ai Logo"
             width={32}
             height={32}
             className="rounded-md"
@@ -67,7 +67,7 @@ export function Header({ toggleSidebar, transparent = false }: HeaderProps) {
         )}
         </div>
         <h1 className={`text-xl font-bold ${transparent ? 'text-white' : ''}`}>
-        Playgrounds
+        Origam.ai
         </h1>
         </Link>
       </div>

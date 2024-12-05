@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: MetadataProps) {
     }
     const { user } = image
     const metadata = {
-        title: `Shared on Playgrounds by ${user.name}`,
+        title: `Shared on Origam.ai by ${user.name}`,
         description: `Explore the unique image generated from a text prompt. ID: ${id}`,
         image: `${process.env.NEXTAUTH_URL}/share/${image.url}`,
     };

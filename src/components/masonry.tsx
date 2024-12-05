@@ -129,7 +129,6 @@ const LazyImage: React.FC<LazyImageProps> = ({ image, index, hoveredIndex, setHo
               <p className="text-white text-xs md:text-sm">
                 {prompt.length > 100 ? `${prompt.slice(0, 100)}...` : prompt}
               </p>
-              <p className="text-white text-xs md:text-sm self-start">Remix</p>
             </div>
           )}
         </>

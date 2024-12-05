@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Image from "next/image";
-import { Download, RefreshCw } from 'lucide-react'
+import { Download, Sparkles } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Button } from '@/components/ui/button'
 import { SharePopover } from '@/components/share'
@@ -68,7 +68,7 @@ export default function InteractiveImage({ image }: { image: ImageData }) {
                         <TooltipProvider>
                             {[
                                 { icon: Download, label: 'Download', action: 'download' },
-                                { icon: RefreshCw, label: 'Remix', action: 'remix' },
+                                { icon: Sparkles, label: 'Remix', action: 'remix' },
                                 //   { icon: Info, label: 'Info', action: 'info' },
                             ].map(({ icon: Icon, label, action }) => (
                                 <Tooltip key={action}>

@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react';
 import { Copy, Globe } from 'lucide-react';
 import { FaReddit, FaPinterest, FaInstagram, FaFacebook, FaTwitter } from 'react-icons/fa';
 import { Button } from '@/components/ui/button';
@@ -13,66 +12,59 @@ type SharePopoverProps = {
 };
 
 export function SharePopover({ url }: SharePopoverProps) {
-  const [copied, setCopied] = useState(false);
-
+  
   const copyToClipboard = async () => {
     await navigator.clipboard.writeText(url);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
   };
 
   const pageURL = encodeURIComponent(url);
   const pageTitle = ""
 
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon">
-          <Globe className="w-5 h-5" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-64 p-4 space-y-3">
-        {/* Share with Link Section */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <label htmlFor="share-link" className="text-sm font-medium">
-              Share with link
-            </label>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
+    <TooltipProvider>
+      <Popover>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <Globe className="w-5 h-5" />
+              </Button>
+            </PopoverTrigger>
+          </TooltipTrigger>
+          <TooltipContent><p>Share to Social</p></TooltipContent>
+        </Tooltip>
+        <PopoverContent className="w-64 p-4 space-y-3">
+          {/* Share with Link Section */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label htmlFor="share-link" className="text-sm font-medium">
+                Share with link
+              </label>
+                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={copyToClipboard}
                   >
                     <Copy className="h-5 w-5" />
                   </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {copied ? "Copied!" : "Copy to clipboard"}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            </div>
+            <div className="relative">
+              <Input
+                id="share-link"
+                type="text"
+                value={url}
+                readOnly
+                className="pr-10"
+              />
+            </div>
           </div>
-          <div className="relative">
-            <Input
-              id="share-link"
-              type="text"
-              value={url}
-              readOnly
-              className="pr-10"
-            />
-          </div>
-        </div>
 
-        {/* Social Share Section */}
-        <div className="space-y-2">
-          <label htmlFor="share-link" className="text-sm font-medium">
-            Share on Social
-          </label>
-          <div className="flex justify-center items-center space-x-4">
-            <TooltipProvider>
+          {/* Social Share Section */}
+          <div className="space-y-2">
+            <label htmlFor="share-link" className="text-sm font-medium">
+              Share on Social
+            </label>
+            <div className="flex justify-center items-center space-x-4">
               {[
                 { icon: FaTwitter, label: "X", action: `https://x.com/intent/tweet?text=${pageURL}` },
                 { icon: FaReddit, label: "Reddit", action: `https://www.reddit.com/submit?url=${pageURL}` },
@@ -94,10 +86,11 @@ export function SharePopover({ url }: SharePopoverProps) {
                   </TooltipContent>
                 </Tooltip>
               ))}
-            </TooltipProvider>
+
+            </div>
           </div>
-        </div>
-      </PopoverContent>
-    </Popover>
+        </PopoverContent>
+      </Popover>
+    </TooltipProvider>
   );
 }

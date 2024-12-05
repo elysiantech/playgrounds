@@ -4,7 +4,7 @@ import { ArrowDown } from 'lucide-react';
 
 export function Hero() {
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+    <section className="relative  h-[90vh] flex items-center justify-center overflow-hidden">
       <div className="absolute inset-0 z-0">
         <Image
           src="https://picsum.photos/1920/1080"
@@ -16,7 +16,7 @@ export function Hero() {
         />
       </div>
       <div className="relative z-10 text-center px-4">
-        <h1 className="text-4xl font-bold mb-4 text-white">Welcome to Image Playgrounds</h1>
+        <h1 className="text-4xl font-bold mb-4 text-white">Welcome to Image Origam.ai</h1>
         <p className="text-xl mb-8 text-white">Create and remix amazing images with AI</p>
         <Link
           href="/playground"

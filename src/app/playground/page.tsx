@@ -1,7 +1,7 @@
 'use client'
 
 import React, { Suspense } from 'react'
-import { Upload, X, Sparkles, Trash2, Download, RefreshCw, Bookmark, BookmarkCheck, Settings2 as Edit, Expand, Layers, ImageOff, ChevronLeft, ChevronRight, Info } from 'lucide-react'
+import { Upload, X, Sparkles, Trash2, Download, Bookmark, BookmarkCheck, Settings2 as Edit, Expand, Layers, ImageOff, ChevronLeft, ChevronRight, Info } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import Image from 'next/image'
 import { useSearchParams } from 'next/navigation'
@@ -71,7 +71,7 @@ function Playground() {
     }
     getImages().then((images) => {
       const parsedImages = images.map((image) => {
-        return { ...image, url: `/share/${image.url}` }
+        return { ...image, url: `${image.url}` }
       });
       setGeneratedImages(parsedImages)
     })
@@ -163,7 +163,7 @@ function Playground() {
       // Update newImages with the generated URLs
       const updatedImages = newImages.map((image, index) => ({
         ...image,
-        url: `/share/${generatedImages[index].url}`,
+        url: `${generatedImages[index].url}`,
         metadata: generatedImages[index].metadata
       }));
 
@@ -199,7 +199,7 @@ function Playground() {
 
       // Update newImages with the generated URLs
       newImage.id = upscaledImage.id;
-      newImage.url = `/share/${upscaledImage.url}`;
+      newImage.url = `${upscaledImage.url}`;
       newImage.metadata = upscaledImage.metadata
 
       // Update the state with the generated images
@@ -315,13 +315,13 @@ function Playground() {
   const handleDownload = async () => {
     if (selectedImage) {
       try {
-        const response = await fetch(selectedImage.url, { mode: 'cors' });
+        const response = await fetch(`/share/${selectedImage.url}`, { mode: 'cors' });
         const blob = await response.blob();
         const blobUrl = URL.createObjectURL(blob);
 
         const link = document.createElement('a');
         link.href = blobUrl;
-        link.download = 'generated-image.png';
+        link.download = selectedImage.url;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -528,7 +528,7 @@ function Playground() {
               {selectedImage ? (
                 <div className="relative w-full h-full max-w-full max-h-full overflow-hidden" style={{ height: '100%' }}>
                   <Image
-                    src={selectedImage.url}
+                    src={`/share/${selectedImage.url}`}
                     alt="Generated image"
                     className="object-contain rounded-lg shadow-lg"
                     fill
@@ -569,7 +569,7 @@ function Playground() {
                         <TooltipProvider>
                           {[
                             { icon: Download, label: 'Download', action: 'download' },
-                            { icon: RefreshCw, label: 'Remix', action: 'remix' },
+                            { icon: Sparkles, label: 'Remix', action: 'remix' },
                             { icon: Info, label: 'Info', action: 'info' },
                             { icon: selectedImage.bookmark ? BookmarkCheck : Bookmark, label: 'Bookmark', action: 'bookmark' },
                             { icon: Trash2, label: 'Delete', action: 'delete' },
@@ -704,7 +704,7 @@ function Playground() {
                   <div key={index} className="relative group flex-shrink-0">
                     <Image
                       loader={customLoader}
-                      src={image.url}
+                      src={`/share/${image.url}`}
                       alt={`Generated image ${index + 1}`}
                       width={100}
                       height={100}

@@ -7,8 +7,8 @@ import { SessionProvider } from "next-auth/react";
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Playgrounds',
-  description: 'Generative AI playground',
+  title: 'Origam.ai - Free Online AI Image Generator',
+  description: 'Generative amazing images using the latest state of the art AI models',
 }
 
 export default function RootLayout({children,}: {children: React.ReactNode}) {

@@ -14,7 +14,7 @@ export default function SignIn() {
       <div className="mb-8">
       <Image
           src={theme === 'dark' ? '/logo-white-black.png' : '/logo-black-white.png'}
-          alt="Playgrounds Logo"
+          alt="Origam.ai Logo"
           width={64}
           height={64}
           className="rounded-md"
