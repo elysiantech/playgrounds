@@ -1,6 +1,6 @@
 'use client'
 
-import React, {Suspense} from 'react'
+import React, { Suspense } from 'react'
 import { Upload, X, Sparkles, Trash2, Download, RefreshCw, Bookmark, BookmarkCheck, Settings2 as Edit, Expand, Layers, ImageOff, ChevronLeft, ChevronRight, Info } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import Image from 'next/image'
@@ -44,6 +44,7 @@ export default function PlaygroundPage() {
   );
 }
 
+
 function Playground() {
   const { setTheme } = useTheme()
   const searchParams = useSearchParams()
@@ -69,9 +70,9 @@ function Playground() {
       setTheme(savedTheme)
     }
     getImages().then((images) => {
-      const parsedImages = images.map((image) => { 
-            return { ...image, url: `/share/${image.url}`}
-          });
+      const parsedImages = images.map((image) => {
+        return { ...image, url: `/share/${image.url}` }
+      });
       setGeneratedImages(parsedImages)
     })
   }, []);
@@ -95,7 +96,7 @@ function Playground() {
     if (numberOfImagesParam) setNumberOfImages(parseInt(numberOfImagesParam))
   }, [searchParams])
 
-  const customLoader = ({ src, width, quality }:{src:string, width:number, quality?:number}) => {
+  const customLoader = ({ src, width, quality }: { src: string, width: number, quality?: number }) => {
     return `${src}?width=${width}&quality=${quality || 75}`;
   };
 
@@ -181,9 +182,9 @@ function Playground() {
       })
     }
   }
-  const handleUpscaleImage = async (image:ImageData) => {
+  const handleUpscaleImage = async (image: ImageData) => {
 
-    const newImage: ImageData = { 
+    const newImage: ImageData = {
       ...image,
       id: undefined,
       url: `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='512' height='512' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' font-size='24' text-anchor='middle' dy='.3em' fill='%23999'%3EUpscaling...%3C/text%3E%3C/svg%3E`,
@@ -193,13 +194,13 @@ function Playground() {
       // Temporarily set placeholder images
       setGeneratedImages(prev => [newImage, ...prev]);
       setSelectedImage(newImage);
-      
+
       const upscaledImage = await upscaleImage(image.id!);
-      
+
       // Update newImages with the generated URLs
       newImage.id = upscaledImage.id;
-      newImage.url=`/share/${upscaledImage.url}`;
-      newImage.metadata =  upscaledImage.metadata
+      newImage.url = `/share/${upscaledImage.url}`;
+      newImage.metadata = upscaledImage.metadata
 
       // Update the state with the generated images
       setGeneratedImages(prev => [newImage, ...prev.slice(1)]);
@@ -295,7 +296,7 @@ function Playground() {
         })
         setSelectedImage(nextImage)
       }
-      
+
 
       toast({
         title: "Image Deleted",
@@ -359,44 +360,6 @@ function Playground() {
     <div className="flex flex-col md:flex-row h-screen bg-background">
       {/* Sidebar */}
       <aside className={`w-full md:w-64 border-r p-4 flex flex-col space-y-4 ${isSidebarOpen ? 'block' : 'hidden'} md:block`}>
-        <Card className="w-full">
-          <CardContent className="p-4 flex flex-col items-center relative">
-            <Label htmlFor="image-upload" className="cursor-pointer">
-              {refImage ? (
-                <Image
-                  src={refImage}
-                  alt="Uploaded"
-                  width={100}
-                  height={100}
-                  className="rounded-md object-cover"
-                />
-              ) : (
-                <div className="w-24 h-24 bg-muted rounded-md flex items-center justify-center">
-                  <Upload className="w-8 h-8 text-muted-foreground" />
-                </div>
-              )}
-            </Label>
-            <Input
-              id="image-upload"
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleImageUpload}
-            />
-            {refImage && (
-              <Button
-                size="icon"
-                variant="ghost"
-                className="absolute top-2 right-2"
-                onClick={clearRefImage}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            )}
-            <span className="mt-2 text-sm font-medium">Image</span>
-          </CardContent>
-        </Card>
-
         <div className="relative">
           <Label>Prompt</Label>
           <Textarea
@@ -441,11 +404,48 @@ function Playground() {
             <span>Precise</span>
           </div>
         </div>
-
+       
         <Accordion type="single" collapsible className="w-full">
           <AccordionItem value="advanced">
             <AccordionTrigger>Advanced</AccordionTrigger>
             <AccordionContent className="space-y-4">
+              <Card className="w-full">
+                <CardContent className="p-4 flex flex-col items-center relative">
+                  <Label htmlFor="image-upload" className="cursor-pointer">
+                    {refImage ? (
+                      <Image
+                        src={refImage}
+                        alt="Uploaded"
+                        width={100}
+                        height={100}
+                        className="rounded-md object-cover"
+                      />
+                    ) : (
+                      <div className="w-24 h-24 bg-muted rounded-md flex items-center justify-center">
+                        <Upload className="w-8 h-8 text-muted-foreground" />
+                      </div>
+                    )}
+                  </Label>
+                  <Input
+                    id="image-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleImageUpload}
+                  />
+                  {refImage && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="absolute top-2 right-2"
+                      onClick={clearRefImage}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                  <span className="mt-2 text-sm font-medium">Image</span>
+                </CardContent>
+              </Card>
               <div className="space-y-2">
                 <Label>Steps</Label>
                 <Slider
@@ -514,7 +514,7 @@ function Playground() {
 
       {/* Main content area */}
       <div className="flex-1 flex flex-col w-full md:w-auto">
-      <Header toggleSidebar={toggleSidebar} />
+        <Header toggleSidebar={toggleSidebar} />
         {/* Main content */}
         <main className="flex-1 flex flex-col overflow-hidden">
           {/* Selected image area */}
@@ -538,7 +538,7 @@ function Playground() {
                   {showTools && selectedImage && (
                     <>
                       <div className="absolute top-2 right-2 bg-background/40 backdrop-blur-md rounded-lg p-2 flex space-x-2">
-                        <SharePopover url={`${window.location.origin}/images/${selectedImage.id}`}/>
+                        <SharePopover url={`${window.location.origin}/images/${selectedImage.id}`} />
                         <Popover>
                           <PopoverTrigger asChild>
                             <Button variant="ghost" size="icon" className="text-foreground/90 hover:text-foreground">
@@ -711,7 +711,7 @@ function Playground() {
                       className="rounded-md cursor-pointer hover:opacity-80 transition-opacity"
                       onClick={() => setSelectedImage(image)}
                       style={{ height: `${galleryHeight - 16}px`, width: 'auto' }}
-                      //unoptimized
+                    //unoptimized
                     />
                   </div>
                 ))}
