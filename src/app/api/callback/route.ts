@@ -8,6 +8,7 @@ export const POST = verifySignatureAppRouter(async (req: NextRequest) =>{
 // export async function POST (req: NextRequest) {
     const { searchParams } = req.nextUrl;
     const id  = searchParams.get('id');
+    const sessionId  = searchParams.get('sessionId') as string;
     const body = await req.json(); 
 
     const messageId = body?.sourceMessageId
@@ -25,18 +26,20 @@ export const POST = verifySignatureAppRouter(async (req: NextRequest) =>{
             url: upscaledImageUrl,
         },
     });
-    if (clients.has(messageId)) {
-        const controller = clients.get(messageId);
+    
+    console.log(`clients has ${clients.entries.length} entries, ${messageId} ${clients.has(sessionId)?'found':'notfound'}`)
+    if (clients.has(sessionId)) {
+        const controller = clients.get(sessionId);
         controller!.enqueue(JSON.stringify(newImage));
-        controller!.close();
-        clients.delete(messageId);
+        // controller!.close();
+        // clients.delete(sessionId);
     }
     return NextResponse.json({ message: 'Image processed successfully' })
 });
 
 export async function GET(req: NextRequest) {
     const { searchParams } = req.nextUrl;
-    const messageId  = searchParams.get('messageId');
+    const sessionId  = searchParams.get('sessionId');
 
     const stream = new ReadableStream({
         start(controller) {
@@ -49,11 +52,11 @@ export async function GET(req: NextRequest) {
             const close = () => {
                 clearInterval(interval);
                 controller.close();
-                clients.delete(messageId as string); 
+                clients.delete(sessionId as string); 
             };
         
               // Store the controller in the clients map
-            clients.set(messageId as string, { enqueue, close });
+            clients.set(sessionId as string, { enqueue, close });
             return () => {
                 close()
             }

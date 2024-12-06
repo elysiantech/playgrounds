@@ -33,7 +33,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
                 url,
                 body: { image_path: `s3://${originalImage!.url}` },
                 retries: 1,
-                callback:  `${process.env.NEXTAUTH_URL}/api/callback?id=${newId}`,
+                callback:  `${process.env.NEXTAUTH_URL}/api/callback?id=${newId}&sessionId=${originalImage.userId}`,
             });
             if (!response.messageId)
                 return NextResponse.json({ error: "Failed to queue request" }, { status: 500 });

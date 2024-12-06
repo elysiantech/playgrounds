@@ -34,6 +34,7 @@ import { processWithConcurrencyLimit } from '@/lib/utils'
 import { ImageData } from '@/lib/types';
 import { SharePopover } from '@/components/share'
 import { Header } from '@/components/header';
+import { useSession } from 'next-auth/react';
 
 export default function PlaygroundPage() {
   return (
@@ -60,6 +61,7 @@ function Playground() {
   const [showInfoPanel, setShowInfoPanel] = React.useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false)
   const [galleryHeight, setGalleryHeight] = React.useState(120);
+  const { data: session } = useSession();
   const { enhancePrompt, generateImage, getImages, updateImage, deleteImage, upscaleImage } = useAIPlayground()
 
   React.useEffect(() => {
@@ -98,7 +100,8 @@ function Playground() {
     if (process.env.NODE_ENV !== 'production') {
       return;
     }
-    const eventSource = new EventSource('/api/callback');
+    const sessionId = session?.user?.id; // Use the user's unique ID
+    const eventSource = new EventSource(`/api/callback?sessionId=${sessionId}`);
     eventSource.onmessage = (event) => {
       try {
         const data = JSON.parse(event.data);
