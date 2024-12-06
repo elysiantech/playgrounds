@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+// import { Client } from "@upstash/qstash";
+
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
     try {
@@ -15,22 +17,22 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         if (!originalImage) {
             return NextResponse.json({ error: "Image not found" }, { status: 404 });
         }
-
-        const url = `${process.env.BACKEND_URL}/start-task?className=RealEsrganUpscaler&waitUntilComplete=true`;
+        const url = `${process.env.BACKEND_URL}`.replace('workflows','stable-diffusion-realesrganupscaler-web-predict')
+        // const url = `${process.env.BACKEND_URL}`.replace('workflows','blackforestlabs-fluxschnell-web-predict')
         const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ image_path: `s3://${originalImage.url}` }),
         });
-        const task = await response.json();
-        const upscaledImageUrl = task.metadata?.image_path
+        const result = await response.json();
+        const upscaledImageUrl = result.image_path
 
         // Create a new image record in the database
         const newImage = await prisma.image.create({
             data: {
                 url: upscaledImageUrl,
                 metadata: {
-                    originalImage: id,
+                    originalImage: originalImage.url,
                     resolution: `x${factor}`,
                 },
                 prompt: originalImage.prompt,
@@ -52,3 +54,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         );
     }
 }
+
+// const client = new Client({token: process.env.QSTASH_TOKEN!});
+// async function publish(req: Request, { params }: { params: Promise<{ id: string }> }) {
+//     const id = (await params).id;
+//     const originalImage = await prisma.image.findUnique({ where: { id } });
+    
+//     const url = `https://elysiantech--stable-diffusion-realesrganupscaler-web-predict.modal.run;`
+//     const response = await client.publishJSON({
+//         url,
+//         body: JSON.stringify({ image_path: `s3://${originalImage!.url}` }),
+//         callback:  `${process.env.NEXTAUTH_URL}/api/public/callback?id=${id}`,
+//     });
+//     if (!response.messageId)
+//         return NextResponse.json({ error: "Failed to queue request" }, { status: 500 });
+//     return NextResponse.json({messageId:response.messageId})
+// }
