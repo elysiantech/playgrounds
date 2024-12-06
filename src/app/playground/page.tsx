@@ -106,6 +106,8 @@ function Playground() {
     const eventSource = new EventSource(`/api/callback?sessionId=${sessionId}`);
     eventSource.onmessage = (event) => {
       try {
+        if (event.data === 'ping')
+          return;
         const data = JSON.parse(event.data);
         const { id, url, metadata } = data;
 

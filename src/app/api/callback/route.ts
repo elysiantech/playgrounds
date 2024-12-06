@@ -27,7 +27,7 @@ export const POST = verifySignatureAppRouter(async (req: NextRequest) =>{
         },
     });
     
-    console.log(`clients has ${clients.entries.length} entries, ${messageId} ${clients.has(sessionId)?'found':'notfound'}`)
+    console.log(`clients has ${clients.entries.length} entries`)
     if (clients.has(sessionId)) {
         const controller = clients.get(sessionId);
         controller!.enqueue(JSON.stringify(newImage));
@@ -57,10 +57,11 @@ export async function GET(req: NextRequest) {
         
               // Store the controller in the clients map
             clients.set(sessionId as string, { enqueue, close });
+            console.log(`clients has ${clients.entries.length} entries`)
             return () => {
+                console.log('closing connection')
                 close()
             }
-            return close
         }
     })
 
