@@ -1,7 +1,7 @@
 'use client'
 
 import React, { Suspense } from 'react'
-import { Upload, X, Sparkles, Trash2, Download, Bookmark, BookmarkCheck, Settings2 as Edit, Expand, Layers, ImageOff, ChevronLeft, ChevronRight, Info } from 'lucide-react'
+import { Upload, X, Sparkles, Trash2, Download, Expand, Bookmark, BookmarkCheck, WandSparkles, ChevronLeft, ChevronRight, Info } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import Image from 'next/image'
 import { useSearchParams } from 'next/navigation'
@@ -28,7 +28,6 @@ import {
 import { Card, CardContent } from '@/components/ui/card'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { toast } from '@/hooks/use-toast'
 import { useAIPlayground } from "@/hooks/useAIPlayground"
 import { processWithConcurrencyLimit } from '@/lib/utils'
@@ -43,7 +42,6 @@ export default function PlaygroundPage() {
     </Suspense>
   );
 }
-
 
 function Playground() {
   const { setTheme } = useTheme()
@@ -163,6 +161,7 @@ function Playground() {
       // Update newImages with the generated URLs
       const updatedImages = newImages.map((image, index) => ({
         ...image,
+        id: generatedImages[index].id,
         url: `${generatedImages[index].url}`,
         metadata: generatedImages[index].metadata
       }));
@@ -528,7 +527,7 @@ function Playground() {
               {selectedImage ? (
                 <div className="relative w-full h-full max-w-full max-h-full overflow-hidden" style={{ height: '100%' }}>
                   <Image
-                    src={`/share/${selectedImage.url}`}
+                    src={selectedImage.url.startsWith('data:image')? selectedImage.url: `/share/${selectedImage.url}`}
                     alt="Generated image"
                     className="object-contain rounded-lg shadow-lg"
                     fill
@@ -539,37 +538,11 @@ function Playground() {
                     <>
                       <div className="absolute top-2 right-2 bg-background/40 backdrop-blur-md rounded-lg p-2 flex space-x-2">
                         <SharePopover url={`${window.location.origin}/images/${selectedImage.id}`} />
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button variant="ghost" size="icon" className="text-foreground/90 hover:text-foreground">
-                              <Edit className="h-4 w-4" />
-                              <span className="sr-only">Edit options</span>
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-40">
-                            <div className="flex flex-col space-y-2">
-                              {[
-                                { icon: Layers, label: 'Make 3D', action: 'make3D' },
-                                { icon: Expand, label: 'AI Expand', action: 'aiExpand' },
-                                { icon: ImageOff, label: 'Remove BG', action: 'removeBackground' },
-                              ].map(({ icon: Icon, label, action }) => (
-                                <Button
-                                  key={action}
-                                  variant="ghost"
-                                  className="justify-start text-foreground/90 hover:text-foreground"
-                                  onClick={() => handleImageAction(action)}
-                                >
-                                  <Icon className="mr-2 h-4 w-4" />
-                                  {label}
-                                </Button>
-                              ))}
-                            </div>
-                          </PopoverContent>
-                        </Popover>
                         <TooltipProvider>
                           {[
+                            { icon: Expand, label: 'Super Resolution', action: 'aiExpand' },
                             { icon: Download, label: 'Download', action: 'download' },
-                            { icon: Sparkles, label: 'Remix', action: 'remix' },
+                            { icon: WandSparkles, label: 'Remix', action: 'remix' },
                             { icon: Info, label: 'Info', action: 'info' },
                             { icon: selectedImage.bookmark ? BookmarkCheck : Bookmark, label: 'Bookmark', action: 'bookmark' },
                             { icon: Trash2, label: 'Delete', action: 'delete' },
@@ -704,7 +677,7 @@ function Playground() {
                   <div key={index} className="relative group flex-shrink-0">
                     <Image
                       loader={customLoader}
-                      src={`/share/${image.url}`}
+                      src={image.url.startsWith('data:image')? image.url: `/share/${image.url}`}
                       alt={`Generated image ${index + 1}`}
                       width={100}
                       height={100}

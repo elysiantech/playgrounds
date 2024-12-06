@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import storage  from '@/lib/storage'
 import { v4 as uuidv4 } from 'uuid';
+import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth"
 
 interface GenerateImageParams {
   prompt?: string;
@@ -13,6 +15,12 @@ interface GenerateImageParams {
 }
 
 async function together (request: Request) {
+  // Get the user's session
+  const session = await auth();
+  if (!session || !session.user || !session.user.id) {
+    return NextResponse.json({ error: "Unauthorized" },{ status: 401 });
+  }
+
   const params: GenerateImageParams = await request.json();
 
   const modelTypes: Record<string, string> = {
@@ -61,19 +69,28 @@ async function together (request: Request) {
       return NextResponse.json({ error: 'No image data returned' }, { status: 500 });
     }
 
-
     // Upload to bucket
     const filename = `${uuidv4()}.png`;
     const buffer = Buffer.from(base64Image, "base64");
     await storage.putObject(filename, buffer);
 
-    // Return the image URL
-    return NextResponse.json({
-      image: {
-        url: filename,
+    // Store in database
+    const newImage = await prisma.image.create({
+      data: {
+        url:filename,
         metadata: result.data[0]?.metadata || {},
+        userId:session.user.id,
+        prompt: params.prompt || '',
+        model: params.model,
+        creativity: params.creativity,
+        steps: params.steps,
+        seed: String(params.seed),
+        refImage: params.refImage,
       },
     });
+    
+    // Return new Image
+    return NextResponse.json(newImage);
   } catch (error) {
     console.error('Error generating image:', error);
     return NextResponse.json({ error: `Failed to generate image - ${error}` }, { status: 500 });
@@ -81,6 +98,12 @@ async function together (request: Request) {
 }
 
 async function backend(request: Request) {
+  // Get the user's session
+  const session = await auth();
+  if (!session || !session.user || !session.user.id) {
+    return NextResponse.json({ error: "Unauthorized" },{ status: 401 });
+  }
+
   // Parse request parameters
   const params: GenerateImageParams = await request.json();
 
@@ -110,8 +133,7 @@ async function backend(request: Request) {
   };
 
   // Backend API endpoint
-  const url = `${process.env.BACKEND_URL}/start-task?className=${className}&waitUntilComplete=true`;
-
+  const url =`${process.env.BACKEND_URL}`.replace(/--(.*?)\.modal\.run/, `--blackforestlabs-${className.toLocaleLowerCase()}-web-predict.modal.run`);
   try {
     // Send a POST request to the backend
     const response = await fetch(url, {
@@ -130,15 +152,24 @@ async function backend(request: Request) {
     }
 
     // Parse the backend response
-    const task = await response.json();
-
-    // Construct the response with the image URL
-    return NextResponse.json({
-      image: {
-        url: task.metadata?.image_path,
-        metadata: task.metadata,
+    const result = await response.json();
+    // Store in database
+    const newImage = await prisma.image.create({
+      data: {
+        url:result.image_path,
+        metadata: {},
+        userId:session.user.id,
+        prompt: params.prompt || '',
+        model: params.model,
+        creativity: params.creativity,
+        steps: params.steps,
+        seed: String(params.seed),
+        refImage: params.refImage,
       },
     });
+    
+    // Return new Image
+    return NextResponse.json(newImage);
   } catch (error) {
     console.error('Error starting task:', error);
     return NextResponse.json(
@@ -149,6 +180,7 @@ async function backend(request: Request) {
 }
 
 export async function POST(request: Request){
+  
   if (true)
     return await together(request)
   else 

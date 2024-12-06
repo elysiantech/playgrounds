@@ -50,33 +50,6 @@ export function useAIPlayground() {
     }
   };
 
-  const createImage = async (imageData: GenerateImageParams & GeneratedImage) => {
-    setIsLoading(true);
-    setError(null);
-    const { url, prompt,creativity, steps, seed, model, metadata, bookmark } = imageData;
-    try {
-      const response = await fetch('/api/images', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ url, prompt, creativity, steps, seed, model, metadata, bookmark }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save image to database');
-      }
-
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      setError('Failed to save image to database');
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const generateImage = async (params: GenerateImageParams): Promise<GeneratedImage> => {
     setIsLoading(true);
     setError(null);
@@ -94,16 +67,7 @@ export function useAIPlayground() {
       }
 
       const data = await response.json();
-      // return data.image;
-      // Save the generated image to the database
-      const savedImage = await createImage({
-        ...params,
-        url: data.image.url,
-        metadata: data.image.metadata,
-        bookmark: false, 
-        id:"",
-      });
-      return { ...data.image, id: savedImage.id };
+      return { url: data.url, id: data.id, metadata: data.metadata, bookmark:data.bookmark };
     } catch (error) {
       setError('Failed to generate image');
       throw error;
@@ -218,7 +182,6 @@ export function useAIPlayground() {
   };
 
   return {
-    createImage,
     enhancePrompt,
     generateImage,
     updateImage,

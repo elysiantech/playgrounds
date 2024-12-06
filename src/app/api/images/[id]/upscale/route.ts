@@ -17,8 +17,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         if (!originalImage) {
             return NextResponse.json({ error: "Image not found" }, { status: 404 });
         }
-        const url = `${process.env.BACKEND_URL}`.replace('workflows','stable-diffusion-realesrganupscaler-web-predict')
-        // const url = `${process.env.BACKEND_URL}`.replace('workflows','blackforestlabs-fluxschnell-web-predict')
+        const url =`${process.env.BACKEND_URL}`.replace(/--(.*?)\.modal\.run/, `--stable-diffusion-realesrganupscaler-web-predict.modal.run`);
         const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -55,13 +54,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }
 }
 
-// const client = new Client({token: process.env.QSTASH_TOKEN!});
-// async function publish(req: Request, { params }: { params: Promise<{ id: string }> }) {
+// const qstash = new Client({token: process.env.QSTASH_TOKEN!});
+// export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
 //     const id = (await params).id;
 //     const originalImage = await prisma.image.findUnique({ where: { id } });
-    
-//     const url = `https://elysiantech--stable-diffusion-realesrganupscaler-web-predict.modal.run;`
-//     const response = await client.publishJSON({
+//     const url =`${process.env.BACKEND_URL}`.replace(/--(.*?)\.modal\.run/, `--stable-diffusion-realesrganupscaler-web-predict.modal.run`);    
+//     const response = await qstash.publishJSON({
 //         url,
 //         body: JSON.stringify({ image_path: `s3://${originalImage!.url}` }),
 //         callback:  `${process.env.NEXTAUTH_URL}/api/public/callback?id=${id}`,
