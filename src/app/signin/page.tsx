@@ -1,14 +1,25 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Image from "next/image"
 import { useTheme } from 'next-themes'
 import { signIn } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Github, Mail } from 'lucide-react'
+import { useSearchParams } from 'next/navigation'
+
 
 export default function SignIn() {
   const { theme } = useTheme()
+  const searchParams = useSearchParams()
+  const [callbackUrl, setCallbackUrl] = useState<string>('/');
+
+  useEffect(() => {
+    const queryCallbackUrl = searchParams?.get('callbackUrl');
+    setCallbackUrl(queryCallbackUrl || '/');
+  }, [searchParams]);
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background">
       <div className="mb-8">
@@ -28,11 +39,11 @@ export default function SignIn() {
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
-          <Button variant="outline" onClick={() => signIn('google', { callbackUrl: '/' })}>
+          <Button variant="outline" onClick={() => signIn('google', { callbackUrl })}>
             <Mail className="mr-2 h-4 w-4" />
             Google
           </Button>
-          <Button variant="outline" onClick={() => signIn('github', { callbackUrl: '/' })}>
+          <Button variant="outline" onClick={() => signIn('github', { callbackUrl })}>
             <Github className="mr-2 h-4 w-4" />
             Github
           </Button>

@@ -14,15 +14,20 @@ export default async function middleware(request: NextRequest) {
         '/api/callback',
         '/api/public',
     ];
-    if (excludePaths.some(path => pathname.startsWith(path))||
+    
+    if (pathname === '/' || 
+        excludePaths.some(path => pathname.startsWith(path)) ||
         ['.png', '.svg'].some(path => pathname.endsWith(path))) {
         return NextResponse.next();
     }
     // check authentication status
     const session = await auth();
-    if (!session){
-        return NextResponse.redirect(new URL('/signin', request.url))
+    if (!session) {
+        const { pathname, search } = request.nextUrl;
+        const callbackUrl = `${request.nextUrl.origin}${pathname}${search}`;
+        return NextResponse.redirect(new URL(`/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`, request.url));
     }
+    
     return NextResponse.next()
 }
 
