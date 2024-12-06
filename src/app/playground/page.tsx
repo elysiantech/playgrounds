@@ -94,6 +94,32 @@ function Playground() {
     if (numberOfImagesParam) setNumberOfImages(parseInt(numberOfImagesParam))
   }, [searchParams])
 
+  React.useEffect(() => {
+    if (process.env.NODE_ENV !== 'production') {
+      return;
+    }
+    const eventSource = new EventSource('/api/callback');
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        const { id, url, metadata } = data;
+
+        // Update the generatedImages array
+        setGeneratedImages((prevImages) =>
+          prevImages.map((image) =>
+            image.id === id ? { ...image, url, metadata } : image
+          )
+        );
+      } catch (error) {
+        console.error('Error parsing event data:', error);
+      }
+    };
+
+    return () => {
+      eventSource.close();
+    };
+  }, [])
+
   const customLoader = ({ src, width, quality }: { src: string, width: number, quality?: number }) => {
     return `${src}?width=${width}&quality=${quality || 75}`;
   };

@@ -1,9 +1,8 @@
 import { NextResponse, NextRequest } from 'next/server'
 import prisma from "@/lib/prisma";
-import { Image as ImageModel } from '@prisma/client';
 import { verifySignatureAppRouter } from "@upstash/qstash/nextjs";
 
-const clients = new Map<string, { enqueue: (data: ImageModel) => void; close: () => void }>();
+const clients = new Map<string, { enqueue: (data: string) => void; close: () => void }>();
 
 export const POST = verifySignatureAppRouter(async (req: NextRequest) =>{
 // export async function POST (req: NextRequest) {
@@ -28,7 +27,7 @@ export const POST = verifySignatureAppRouter(async (req: NextRequest) =>{
     });
     if (clients.has(messageId)) {
         const controller = clients.get(messageId);
-        controller!.enqueue(newImage);
+        controller!.enqueue(JSON.stringify(newImage));
         controller!.close();
         clients.delete(messageId);
     }
@@ -41,11 +40,24 @@ export async function GET(req: NextRequest) {
 
     const stream = new ReadableStream({
         start(controller) {
-            clients.set(messageId as string, controller);
+            
+            const interval = setInterval(() => {
+                controller.enqueue(new TextEncoder().encode(`data: ping\n\n`));
+            }, 5000); // Send a ping message ping 5 seconds
 
+            const enqueue = (data: string) => { controller.enqueue(new TextEncoder().encode(`data: ${data}\n\n`));};
+            const close = () => {
+                clearInterval(interval);
+                controller.close();
+                clients.delete(messageId as string); 
+            };
+        
+              // Store the controller in the clients map
+            clients.set(messageId as string, { enqueue, close });
             return () => {
-                clients.delete(messageId as string);
+                close()
             }
+            return close
         }
     })
 
@@ -57,4 +69,8 @@ export async function GET(req: NextRequest) {
         }
     })
 }
+
+export const config = {
+    runtime: 'edge', // Use Edge runtime for long-lived connections
+};
 
