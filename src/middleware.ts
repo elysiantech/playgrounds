@@ -11,6 +11,7 @@ export default async function middleware(request: NextRequest) {
         '/share',
         '/images',
         '/api/auth',
+        '/api/callback',
         '/api/public',
     ];
     if (excludePaths.some(path => pathname.startsWith(path))||
