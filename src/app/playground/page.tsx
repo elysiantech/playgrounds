@@ -61,7 +61,7 @@ function Playground() {
   const [showInfoPanel, setShowInfoPanel] = React.useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false)
   const [galleryHeight, setGalleryHeight] = React.useState(120);
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const { enhancePrompt, generateImage, getImages, updateImage, deleteImage, upscaleImage } = useAIPlayground()
 
   React.useEffect(() => {
@@ -100,7 +100,9 @@ function Playground() {
     if (process.env.NODE_ENV !== 'production') {
       return;
     }
-    const sessionId = session?.user?.id; // Use the user's unique ID
+    if (status === 'loading' || !session?.user?.id)
+      return
+    const sessionId = session.user.id; 
     const eventSource = new EventSource(`/api/callback?sessionId=${sessionId}`);
     eventSource.onmessage = (event) => {
       try {
@@ -121,7 +123,7 @@ function Playground() {
     return () => {
       eventSource.close();
     };
-  }, [session, ])
+  }, [session, status ])
 
   const customLoader = ({ src, width, quality }: { src: string, width: number, quality?: number }) => {
     return `${src}?width=${width}&quality=${quality || 75}`;
