@@ -48,19 +48,31 @@ export default function InteractiveImage({ image }: { image: ImageData }) {
     }
 
     return (
-        <div className="flex items-center justify-center w-full h-full"
+        <div className="flex items-center justify-center w-full h-full relative overflow-hidden"
             style={{ width: '100%', height: '100%' }}
             onMouseEnter={() => setShowTools(true)}
             onMouseLeave={() => setShowTools(false)}
         >
-            <Image
-                src={`/share/${image.url}`}
-                alt={` Image ID:${image.id}`}
-                className="object-contain rounded-lg shadow-lg"
-                width={1024}
-                height={1024}
-                priority
-            />
+            <style jsx>{`
+                @keyframes kenburns {
+                    0% { transform: scale(1) translate(0, 0); }
+                    50% { transform: scale(1.1) translate(-2%, -2%); }
+                    100% { transform: scale(1) translate(0, 0); }
+                }
+                .kenburns-bg {
+                    animation: kenburns 20s ease-in-out infinite;
+                }
+            `}</style>
+            <div className="relative w-[80%] max-w-[1024px] h-auto kenburns-bg flex justify-center items-center">
+                <Image
+                    src={`/share/${image.url}`}
+                    alt={` Image ID:${image.id}`}
+                    className="object-contain rounded-lg shadow-lg"
+                    width={1024}
+                    height={1024}
+                    priority
+                />
+            </div>
             {showTools && image && (
                 <>
                     <div className="absolute top-2 right-2 bg-background/40 backdrop-blur-md rounded-lg p-2 flex space-x-2">

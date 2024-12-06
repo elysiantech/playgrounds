@@ -16,7 +16,7 @@ export default function Home() {
         <Hero />
         <section className="relative">
         <div className="sticky top-0 bg-black mx-auto px-4 py-2 z-10">
-          <h2 className="text-xl mb-4 text-center">Explore Images for Inspiration</h2>
+          <h2 className="text-xl font-light mb-4 text-center">Explore, Get inspired. Create your own.</h2>
         </div>
         <div className="container mx-auto px-4 overflow-y-auto">
         <MasonryGrid selectedImage={(image) => router.push(`/images/${image.id}`)} />

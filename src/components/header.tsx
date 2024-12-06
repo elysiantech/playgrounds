@@ -46,7 +46,7 @@ export function Header({ toggleSidebar, transparent = false }: HeaderProps) {
           />
           )}
         </div>
-        <h1 className={`text-xl font-semibold ${transparent ? 'text-white' : ''}`}>
+        <h1 className={`text-xl font-light ${transparent ? 'text-white' : ''}`}>
         Origam.ai
         </h1>
         </Link>
@@ -66,7 +66,7 @@ export function Header({ toggleSidebar, transparent = false }: HeaderProps) {
           />
         )}
         </div>
-        <h1 className={`text-xl font-bold ${transparent ? 'text-white' : ''}`}>
+        <h1 className={`text-xl font-light ${transparent ? 'text-white' : ''}`}>
         Origam.ai
         </h1>
         </Link>

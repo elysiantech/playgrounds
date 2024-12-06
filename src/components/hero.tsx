@@ -5,19 +5,35 @@ import { ArrowDown } from 'lucide-react';
 export function Hero() {
   return (
     <section className="relative  h-[90vh] flex items-center justify-center overflow-hidden">
+      <style jsx>{`
+        @keyframes kenburns {
+          0% { transform: scale(1) translate(0, 0); }
+          50% { transform: scale(1.1) translate(-2%, -2%); }
+          100% { transform: scale(1) translate(0, 0); }
+        }
+        .kenburns-bg {
+          animation: kenburns 20s ease-in-out infinite;
+        }
+      `}</style>
       <div className="absolute inset-0 z-0">
+        <div className="relative w-full h-full kenburns-bg">
         <Image
           src="https://picsum.photos/1920/1080"
           alt="Background"
           layout="fill"
           objectFit="cover"
           quality={100}
-          className="opacity-50"
+          className="opacity-60"// filter brightness-75"
         />
+        </div>
       </div>
-      <div className="relative z-10 text-center px-4">
-        <h1 className="text-4xl font-bold mb-4 text-white">Welcome to Image Origam.ai</h1>
-        <p className="text-xl mb-8 text-white">Create and remix amazing images with AI</p>
+      <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
+        <h1 className="text-5xl sm:text-6xl font-light mb-2 sm:mb-4 text-white tracking-wide">
+          New <span className="italic">Dimensions of Creativity</span> 
+        </h1>
+        <p className="text-lg sm:text-xl mb-8 text-white/90 font-light tracking-wide max-w-2xl mx-auto">
+          Explore, remix, and create amazing images with AI. Transform your ideas into stunning visuals using our powerful image generation tools.
+        </p>
         <Link
           href="/playground"
           className="px-6 py-3 text-blue-600 bg-white rounded-lg hover:bg-gray-100 transition-colors text-lg font-semibold"
