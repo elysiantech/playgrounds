@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Image from "next/image"
 import { useTheme } from 'next-themes'
 import { signIn } from "next-auth/react"
@@ -9,8 +9,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Github, Mail } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 
+export default function SignInPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SignIn />
+    </Suspense>
+  );
+}
 
-export default function SignIn() {
+function SignIn() {
   const { theme } = useTheme()
   const searchParams = useSearchParams()
   const [callbackUrl, setCallbackUrl] = useState<string>('/');
