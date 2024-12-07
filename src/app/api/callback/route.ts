@@ -2,13 +2,19 @@ import { NextResponse, NextRequest } from 'next/server'
 import prisma from "@/lib/prisma";
 import { verifySignatureAppRouter } from "@upstash/qstash/nextjs";
 
-const clients = new Map<string, { enqueue: (data: string) => void; close: () => void }>();
+export const runtime = 'edge';
+
+export const config = {
+    runtime: 'edge', // Use Edge runtime for long-lived connections
+};
+
+const clients = new Set<ReadableStreamDefaultController<Uint8Array>>();
+
 
 export const POST = verifySignatureAppRouter(async (req: NextRequest) =>{
 // export async function POST (req: NextRequest) {
     const { searchParams } = req.nextUrl;
     const id  = searchParams.get('id');
-    const sessionId  = searchParams.get('sessionId') as string;
     const body = await req.json(); 
 
     const messageId = body?.sourceMessageId
@@ -27,42 +33,43 @@ export const POST = verifySignatureAppRouter(async (req: NextRequest) =>{
         },
     });
     
-    console.log(`clients has ${clients.entries.length} entries`)
-    if (clients.has(sessionId)) {
-        const controller = clients.get(sessionId);
-        controller!.enqueue(JSON.stringify(newImage));
-        // controller!.close();
-        // clients.delete(sessionId);
-    }
-    return NextResponse.json({ message: 'Image processed successfully' })
+    console.log(`post clients has ${clients.size} entries`)
+    const encoder = new TextEncoder();
+    clients.forEach(client => {
+        client.enqueue(encoder.encode(`data: ${JSON.stringify(newImage)}\n\n`));
+    });
+    return NextResponse.json({ message: 'Callback successfull' })
 });
 
 export async function GET(req: NextRequest) {
-    const { searchParams } = req.nextUrl;
-    const sessionId  = searchParams.get('sessionId');
+    // const { searchParams } = req.nextUrl;
+    // const sessionId  = searchParams.get('sessionId');
 
     const stream = new ReadableStream({
         start(controller) {
-            
-            const interval = setInterval(() => {
-                controller.enqueue(new TextEncoder().encode(`data: ping\n\n`));
-            }, 5000); // Send a ping message ping 5 seconds
+            clients.add(controller);
+            const encoder = new TextEncoder();
 
-            const enqueue = (data: string) => { controller.enqueue(new TextEncoder().encode(`data: ${data}\n\n`));};
-            const close = () => {
-                clearInterval(interval);
-                controller.close();
-                clients.delete(sessionId as string); 
-            };
+            // Keep connection alive
+            const interval = setInterval(() => {
+                controller.enqueue(encoder.encode(`data: ping\n\n`));
+            }, 30000); // Send a ping message ping 30 seconds
         
               // Store the controller in the clients map
-            clients.set(sessionId as string, { enqueue, close });
-            console.log(`clients has ${clients.entries.length} entries`)
+            console.log(`new client, has ${clients.size} entries`)
+            req.signal.addEventListener("abort", () => {
+                console.log('stream canceled')
+                clearInterval(interval);
+                clients.delete(controller);// Remove client on disconnect
+            });
+
             return () => {
-                console.log('closing connection')
-                close()
+                console.log('controller closed')
+                clearInterval(interval);
+                clients.delete(controller);
             }
-        }
+            
+        },
     })
 
     return new NextResponse(stream, {
@@ -73,8 +80,4 @@ export async function GET(req: NextRequest) {
         }
     })
 }
-
-export const config = {
-    runtime: 'edge', // Use Edge runtime for long-lived connections
-};
 
