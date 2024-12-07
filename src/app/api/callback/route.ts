@@ -8,7 +8,8 @@ export const config = {
     runtime: 'edge', // Use Edge runtime for long-lived connections
 };
 
-const clients = new Set<ReadableStreamDefaultController<Uint8Array>>();
+const globalForClient = global as unknown as { clients: Set<ReadableStreamDefaultController<Uint8Array>> };
+globalForClient.clients = globalForClient.clients || new Set<ReadableStreamDefaultController<Uint8Array>>();
 
 
 export const POST = verifySignatureAppRouter(async (req: NextRequest) =>{
@@ -33,6 +34,7 @@ export const POST = verifySignatureAppRouter(async (req: NextRequest) =>{
         },
     });
     
+    const clients = globalForClient.clients ;
     console.log(`post clients has ${clients.size} entries`)
     const encoder = new TextEncoder();
     clients.forEach(client => {
@@ -44,7 +46,7 @@ export const POST = verifySignatureAppRouter(async (req: NextRequest) =>{
 export async function GET(req: NextRequest) {
     // const { searchParams } = req.nextUrl;
     // const sessionId  = searchParams.get('sessionId');
-
+    const clients = globalForClient.clients ;
     const stream = new ReadableStream({
         start(controller) {
             clients.add(controller);
