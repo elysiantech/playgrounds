@@ -4,9 +4,9 @@ import { verifySignatureAppRouter } from "@upstash/qstash/nextjs";
 
 // export const runtime = 'edge';
 
-// export const config = {
-//     runtime: 'edge', // Use Edge runtime for long-lived connections
-// };
+export const config = {
+    runtime: 'edge', // Use Edge runtime for long-lived connections
+};
 
 const globalForClient = global as unknown as { clients: Set<ReadableStreamDefaultController<Uint8Array>> };
 globalForClient.clients = globalForClient.clients || new Set<ReadableStreamDefaultController<Uint8Array>>();
