@@ -1,7 +1,7 @@
 'use client'
 
 import React, { Suspense } from 'react'
-import { Upload, X, Sparkles, Trash2, Download, Expand, Bookmark, BookmarkCheck, WandSparkles, ChevronLeft, ChevronRight, Info, Paperclip, Loader2 } from 'lucide-react'
+import { Upload, X, Sparkles, Trash2, Download, Expand, EyeOff, Eye, WandSparkles, ChevronLeft, ChevronRight, Info, Paperclip, Loader2 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import Image from 'next/image'
 import { useSearchParams } from 'next/navigation'
@@ -320,7 +320,7 @@ function Playground() {
             const isBookmarked = !selectedImage.bookmark;
             await updateImage(selectedImage.id!, { bookmark: isBookmarked });
             toast({
-              title: isBookmarked ? "Bookmarked" : "Bookmark Removed",
+              title: isBookmarked ? "Visible to Public" : "Not Published",
               description: `The image has been ${isBookmarked ? "bookmarked" : "unbookmarked"}.`,
             });
           } catch (error) {
@@ -703,7 +703,7 @@ function Playground() {
                             { icon: Download, label: 'Download', action: 'download' },
                             { icon: WandSparkles, label: 'Remix', action: 'remix' },
                             { icon: Info, label: 'Info', action: 'info' },
-                            { icon: selectedImage.bookmark ? BookmarkCheck : Bookmark, label: 'Bookmark', action: 'bookmark' },
+                            { icon: selectedImage.bookmark ? Eye : EyeOff, label: selectedImage.bookmark ? 'Visible to Public':'Hidden From Public', action: 'bookmark' },
                             { icon: Trash2, label: 'Delete', action: 'delete' },
                           ].map(({ icon: Icon, label, action }) => (
                             <Tooltip key={action}>
