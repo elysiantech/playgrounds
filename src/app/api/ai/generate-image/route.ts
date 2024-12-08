@@ -3,16 +3,15 @@ import storage  from '@/lib/storage'
 import { v4 as uuidv4 } from 'uuid';
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth"
+import { GenerateImageParams } from '@/lib/types';
 
-interface GenerateImageParams {
-  prompt?: string;
-  creativity: number;
-  steps: number;
-  seed: number;
-  refImage?: string; // Assuming refImage is passed as a base64 string
-  model: string;
-  numberOfImages: number;
-}
+const aspectRatios: { [key: string]: { width: number; height: number } } = {
+  "1:1": { width: 768, height: 768 },
+  "4:3": { width: 1024, height: 768 },
+  "16:9": { width: 1344, height: 736 },
+  "5:4": { width: 1120, height: 896 },
+  "9:16": { width: 736, height: 1344 },
+};
 
 async function together (request: Request) {
   // Get the user's session
@@ -33,12 +32,13 @@ async function together (request: Request) {
   const model = modelTypes[params.model] || 'black-forest-labs/FLUX.1-schnell-Free';
   const maxSteps = params.model === "Flux.1-Schnell" ? 4 : 50;
   const steps = Math.min(params.steps || maxSteps, maxSteps); // Ensure steps don't exceed max
+  const { width, height } = aspectRatios[ params.aspectRatio?? '4:3']
 
   const payload = {
     model,
     prompt: params.prompt || '',
-    width: 1024, 
-    height: 768, 
+    width, 
+    height, 
     steps: steps,
     seed: Number(params.seed),
     n: 1, // Number of images to generate
@@ -84,6 +84,7 @@ async function together (request: Request) {
         model: params.model,
         creativity: params.creativity,
         steps: params.steps,
+        aspectRatio: params.aspectRatio,
         seed: String(params.seed),
         refImage: params.refImage,
       },
@@ -118,6 +119,7 @@ async function backend(request: Request) {
   const className = modelTypes[params.model] || "FluxSchnell";
   const maxSteps = className === "FluxSchnell" ? 4 : 50;
   const steps = Math.min(params.steps || maxSteps, maxSteps); // Ensure steps don't exceed max
+  const { width, height } = aspectRatios[ params.aspectRatio?? '4:3']
 
   // Construct the payload for the backend
   const newPayload = {
@@ -128,8 +130,8 @@ async function backend(request: Request) {
       ? (params.creativity - 1) / 9
       : undefined,
     seed: Number(params.seed),
-    width: 1024, 
-    height: 1024,
+    width, 
+    height,
   };
 
   // Backend API endpoint
@@ -163,6 +165,7 @@ async function backend(request: Request) {
         model: params.model,
         creativity: params.creativity,
         steps: params.steps,
+        aspectRatio: params.aspectRatio,
         seed: String(params.seed),
         refImage: params.refImage,
       },

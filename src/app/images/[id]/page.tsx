@@ -62,6 +62,7 @@ export default async function ImagePage({ params }: MetadataProps ) {
         metadata: {},
         bookmark: image.bookmark,
         numberOfImages: 1,
+        aspectRatio: image.aspectRatio ?? undefined,
         refImage: image.refImage ?? undefined
       }
     return <InteractiveImage image={imageData} />;

@@ -62,7 +62,8 @@ function Playground() {
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false)
   const [galleryHeight, setGalleryHeight] = React.useState(120);
   const { data: session, status } = useSession();
-  const [isProcessing, setIsProcessing] = React.useState(false)
+  const [isProcessing, setIsProcessing] = React.useState(false);
+  const [aspectRatio, setAspectRatio] = React.useState('4:3');
   const { enhancePrompt, generateImage, getImages, updateImage, deleteImage, upscaleImage, promptFromImage } = useApi()
 
   React.useEffect(() => {
@@ -85,6 +86,7 @@ function Playground() {
     const stepsParam = searchParams.get('steps')
     const seedParam = searchParams.get('seed')
     const numberOfImagesParam = searchParams.get('numberOfImages')
+    const aspectRatioParam = searchParams.get('aspectRatio')
 
     if (promptParam) setPrompt(promptParam)
     if (modelParam) setModel(modelParam)
@@ -95,6 +97,7 @@ function Playground() {
       setFixedSeed(seedParam)
     }
     if (numberOfImagesParam) setNumberOfImages(parseInt(numberOfImagesParam))
+    if(aspectRatioParam) setAspectRatio(aspectRatioParam)
   }, [searchParams])
 
   React.useEffect(() => {
@@ -201,7 +204,8 @@ function Playground() {
         steps,
         seed: String(uniqueSeed),
         numberOfImages,
-        metadata: {}
+        metadata: {},
+        aspectRatio
       };
     });
 
@@ -220,6 +224,7 @@ function Playground() {
           creativity: image.creativity,
           steps: image.steps,
           seed: image.seed,
+          aspectRatio: image.aspectRatio,
           refImage: refImage || undefined,
           numberOfImages: 1
         })
@@ -295,6 +300,7 @@ function Playground() {
           setSteps(selectedImage.steps)
           setSeed('fixed')
           setFixedSeed(String(selectedImage.seed))
+          setAspectRatio(selectedImage.aspectRatio?? '4:3')
           setNumberOfImages(1)
         }
         break;
@@ -422,6 +428,36 @@ function Playground() {
     document.addEventListener('mouseup', stopDrag);
   };
 
+  const aspectRatios = [
+    { icon: "square", ratio: "1:1", label: "Square (Social Media)" },
+    { icon: "rectangle", ratio: "4:3", label: "Classic (Standard)" },
+    { icon: "rectangle", ratio: "5:4", label: "Photo (Large Format)" },
+    { icon: "rectangle", ratio: "16:9", label: "Widescreen (Desktop)" },
+    { icon: "rectangle", ratio: "9:16", label: "Portrait (Mobile)" },
+  ]
+  
+
+  function AspectRatioIcon({ ratio }: { ratio: string }) {
+    const [width, height] = ratio.split(':').map(Number);
+  
+    // Calculate the scaling factor and offsets for centering
+    const maxSize = 16; // Max size for the rect within the SVG
+    const scale = maxSize / Math.max(width, height);
+    const rectWidth = width * scale;
+    const rectHeight = height * scale;
+    const offsetX = (20 - rectWidth) / 2; // Center horizontally
+    const offsetY = (20 - rectHeight) / 2; // Center vertically
+  
+    return (
+      <svg
+        width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"
+        className="text-foreground"
+      >
+        <rect x={offsetX} y={offsetY} width={rectWidth} height={rectHeight} stroke="currentColor" strokeWidth="2"/>
+      </svg>
+    );
+  }
+
   return (
     <div className="flex flex-col md:flex-row h-screen bg-background">
       {/* Sidebar */}
@@ -514,7 +550,28 @@ function Playground() {
             <span>Precise</span>
           </div>
         </div>
-       
+        <Accordion type="single" collapsible className="w-full">
+          <AccordionItem value="outputsize">
+            <AccordionTrigger>Output Size</AccordionTrigger>
+            <AccordionContent className="space-y-4">
+            <Select value={aspectRatio} onValueChange={setAspectRatio}>
+            <SelectTrigger key={aspectRatio} className="w-full flex items-center">
+              <SelectValue placeholder="Select aspect ratio" />
+            </SelectTrigger>
+              <SelectContent>
+                {aspectRatios.map((ar) => (
+                  <SelectItem key={ar.ratio} value={ar.ratio}>
+                    <div className="flex items-center">
+                      <AspectRatioIcon ratio={ar.ratio} />
+                      <span className="ml-2">{ar.label}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
         <Accordion type="single" collapsible className="w-full">
           <AccordionItem value="advanced">
             <AccordionTrigger>Advanced</AccordionTrigger>

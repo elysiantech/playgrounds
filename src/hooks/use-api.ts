@@ -2,16 +2,7 @@
 
 import { useState } from 'react';
 import { ImageData } from '@/lib/types';
-
-interface GenerateImageParams {
-  prompt: string;
-  creativity: number;
-  steps: number;
-  seed: string;
-  model:string;
-  refImage?: string;
-  numberOfImages: number;
-}
+import { GenerateImageParams } from '@/lib/types';
 
 interface GeneratedImage {
   id:string;

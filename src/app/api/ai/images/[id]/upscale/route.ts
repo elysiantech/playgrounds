@@ -65,6 +65,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
                 creativity: originalImage.creativity,
                 steps: originalImage.steps,
                 seed: originalImage.seed,
+                aspectRatio: originalImage.aspectRatio,
                 refImage: originalImage.refImage,
                 userId: originalImage.userId,
             },
