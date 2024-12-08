@@ -3,15 +3,11 @@ import storage  from '@/lib/storage'
 import { v4 as uuidv4 } from 'uuid';
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth"
-import { GenerateImageParams } from '@/lib/types';
+import { GenerateImageParams, aspectRatios } from '@/lib/types';
 
-const aspectRatios: { [key: string]: { width: number; height: number } } = {
-  "1:1": { width: 768, height: 768 },
-  "4:3": { width: 1024, height: 768 },
-  "16:9": { width: 1344, height: 736 },
-  "5:4": { width: 1120, height: 896 },
-  "9:16": { width: 736, height: 1344 },
-};
+const aspectRatioMap = Object.fromEntries(
+  aspectRatios.map((ar) => [ar.ratio, { width: ar.width, height: ar.height }])
+);
 
 async function together (request: Request) {
   // Get the user's session
@@ -32,7 +28,7 @@ async function together (request: Request) {
   const model = modelTypes[params.model] || 'black-forest-labs/FLUX.1-schnell-Free';
   const maxSteps = params.model === "Flux.1-Schnell" ? 4 : 50;
   const steps = Math.min(params.steps || maxSteps, maxSteps); // Ensure steps don't exceed max
-  const { width, height } = aspectRatios[ params.aspectRatio?? '4:3']
+  const { width, height } = aspectRatioMap[ params.aspectRatio?? '4:3']
 
   const payload = {
     model,
@@ -119,7 +115,7 @@ async function backend(request: Request) {
   const className = modelTypes[params.model] || "FluxSchnell";
   const maxSteps = className === "FluxSchnell" ? 4 : 50;
   const steps = Math.min(params.steps || maxSteps, maxSteps); // Ensure steps don't exceed max
-  const { width, height } = aspectRatios[ params.aspectRatio?? '4:3']
+  const { width, height } = aspectRatioMap[ params.aspectRatio?? '4:3']
 
   // Construct the payload for the backend
   const newPayload = {

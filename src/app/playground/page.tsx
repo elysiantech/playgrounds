@@ -31,7 +31,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { toast } from '@/hooks/use-toast'
 import { useApi } from "@/hooks/use-api"
 import { processWithConcurrencyLimit } from '@/lib/utils'
-import { ImageData } from '@/lib/types';
+import { ImageData, aspectRatios } from '@/lib/types';
 import { SharePopover } from '@/components/share'
 import { Header } from '@/components/header';
 import { useSession } from 'next-auth/react';
@@ -427,15 +427,6 @@ function Playground() {
     document.addEventListener('mousemove', doDrag);
     document.addEventListener('mouseup', stopDrag);
   };
-
-  const aspectRatios = [
-    { icon: "square", ratio: "1:1", label: "Square (Social Media)" },
-    { icon: "rectangle", ratio: "4:3", label: "Classic (Standard)" },
-    { icon: "rectangle", ratio: "5:4", label: "Photo (Large Format)" },
-    { icon: "rectangle", ratio: "16:9", label: "Widescreen (Desktop)" },
-    { icon: "rectangle", ratio: "9:16", label: "Portrait (Mobile)" },
-  ]
-  
 
   function AspectRatioIcon({ ratio }: { ratio: string }) {
     const [width, height] = ratio.split(':').map(Number);
