@@ -29,7 +29,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { toast } from '@/hooks/use-toast'
-import { useAIPlayground } from "@/hooks/useAIPlayground"
+import { useApi } from "@/hooks/use-api"
 import { processWithConcurrencyLimit } from '@/lib/utils'
 import { ImageData } from '@/lib/types';
 import { SharePopover } from '@/components/share'
@@ -62,7 +62,7 @@ function Playground() {
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false)
   const [galleryHeight, setGalleryHeight] = React.useState(120);
   const { data: session, status } = useSession();
-  const { enhancePrompt, generateImage, getImages, updateImage, deleteImage, upscaleImage } = useAIPlayground()
+  const { enhancePrompt, generateImage, getImages, updateImage, deleteImage, upscaleImage } = useApi()
 
   React.useEffect(() => {
     const savedTheme = localStorage.getItem('theme')
@@ -103,7 +103,7 @@ function Playground() {
     if (status === 'loading' || !session?.user?.id)
       return
     const sessionId = session.user.id; 
-    const eventSource = new EventSource(`/api/callback?sessionId=${sessionId}`);
+    const eventSource = new EventSource(`/api/ai/callback?sessionId=${sessionId}`);
     eventSource.onmessage = (event) => {
       try {
         if (event.data === 'ping')
@@ -176,7 +176,7 @@ function Playground() {
       setGeneratedImages(prev => [...newImages, ...prev]);
       setSelectedImage(newImages[0]);
 
-      // Generate images using the useAIPlayground hook
+      // Generate images using the useApi hook
       const generatedImages = await processWithConcurrencyLimit(
         newImages,
         2, // max 2 concurrently lower costs

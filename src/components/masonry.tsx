@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Masonry from 'react-masonry-css';
 import { useInView } from 'react-intersection-observer';
 import { ImageData } from '@/lib/types'
-import { useAIPlayground } from '@/hooks/useAIPlayground'; 
+import { useApi } from '@/hooks/use-api'; 
 import Image from 'next/image';
 
 interface MasonryGridProps {
@@ -18,7 +18,7 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({ selectedImage }) => {
   const [isFetching, setIsFetching] = useState(false);
   const [hasMore, setHasMore] = useState(true);
 
-  const { getImages } = useAIPlayground();
+  const { getImages } = useApi();
 
   const breakpointColumns = {
     default: 4,

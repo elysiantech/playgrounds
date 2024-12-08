@@ -20,7 +20,7 @@ interface GeneratedImage {
   bookmark?:boolean;
 }
 
-export function useAIPlayground() {
+export function useApi() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,7 +28,7 @@ export function useAIPlayground() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/enhance-prompt', {
+      const response = await fetch('/api/ai/enhance-prompt', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -54,7 +54,7 @@ export function useAIPlayground() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/generate-image', {
+      const response = await fetch('/api/ai/generate-image', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -80,7 +80,7 @@ export function useAIPlayground() {
     setIsLoading(true);
     setError(null);
     try {
-      const response = await fetch(`/api/images/${id}/upscale`, {
+      const response = await fetch(`/api/ai/images/${id}/upscale`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ factor:8 }),

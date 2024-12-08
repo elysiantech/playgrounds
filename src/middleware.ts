@@ -7,11 +7,11 @@ export default async function middleware(request: NextRequest) {
         '/_next/static',
         '/_next/image',
         '/favicon.ico',
-        '/signin',
+        '/auth/signin',
         '/share',
         '/images',
         '/api/auth',
-        '/api/callback',
+        '/api/ai/callback',
         '/api/public',
     ];
     
@@ -25,7 +25,7 @@ export default async function middleware(request: NextRequest) {
     if (!session) {
         const { pathname, search } = request.nextUrl;
         const callbackUrl = `${request.nextUrl.origin}${pathname}${search}`;
-        return NextResponse.redirect(new URL(`/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`, request.url));
+        return NextResponse.redirect(new URL(`/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`, request.url));
     }
     
     return NextResponse.next()

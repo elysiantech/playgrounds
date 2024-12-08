@@ -7,7 +7,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 
 export const authOptions:NextAuthConfig = {
   pages: {
-    signIn: '/signin',
+    signIn: '/auth/signin',
   },
   adapter: PrismaAdapter(prisma),
   events: {
