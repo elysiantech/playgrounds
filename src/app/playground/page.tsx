@@ -1,7 +1,7 @@
 'use client'
 
 import React, { Suspense } from 'react'
-import { Upload, X, Sparkles, Trash2, Download, Expand, Bookmark, BookmarkCheck, WandSparkles, ChevronLeft, ChevronRight, Info } from 'lucide-react'
+import { Upload, X, Sparkles, Trash2, Download, Expand, Bookmark, BookmarkCheck, WandSparkles, ChevronLeft, ChevronRight, Info, Paperclip, Loader2 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import Image from 'next/image'
 import { useSearchParams } from 'next/navigation'
@@ -62,7 +62,8 @@ function Playground() {
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false)
   const [galleryHeight, setGalleryHeight] = React.useState(120);
   const { data: session, status } = useSession();
-  const { enhancePrompt, generateImage, getImages, updateImage, deleteImage, upscaleImage } = useApi()
+  const [isProcessing, setIsProcessing] = React.useState(false)
+  const { enhancePrompt, generateImage, getImages, updateImage, deleteImage, upscaleImage, promptFromImage } = useApi()
 
   React.useEffect(() => {
     const savedTheme = localStorage.getItem('theme')
@@ -140,6 +141,39 @@ function Playground() {
       }
       reader.readAsDataURL(file)
     }
+  }
+
+  const handlePaste = async (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = (event.clipboardData).items;
+    for(let i=0; i < items.length; i++){
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile();
+        if (file){
+          setIsProcessing(true)
+          const newPrompt = await promptFromImage(file);
+          setPrompt(newPrompt);
+          setIsProcessing(false)
+        }
+        // Handle pasted image
+        event.preventDefault();
+        return
+      }
+    }
+  };
+
+  const handleAttachImage = async () => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = 'image/*'
+    input.onchange =async () => {
+      if (!input.files?.length) return;
+      const file = input.files[0];
+      setIsProcessing(true)
+      const newPrompt = await promptFromImage(file)
+      setPrompt(newPrompt);
+      setIsProcessing(false)
+    }
+    input.click()
   }
 
   const clearRefImage = () => {
@@ -398,30 +432,74 @@ function Playground() {
             placeholder="Enter your prompt here..."
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
-            className="min-h-[100px]"
+            onPaste={handlePaste}
+            className="min-h-[100px] pr-10 pb-10"
           />
+          <TooltipProvider>
+          <div className="absolute bottom-2 left-2">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={handleAttachImage}
+              >
+                 {isProcessing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Paperclip className="h-4 w-4" />
+                )}
+                <span className="sr-only">Attach an image</span>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Attach an image</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
           {prompt && (
             <>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="absolute top-4 right-0"
+              <div className="absolute top-2 right-2">
+              <Tooltip>
+              <TooltipTrigger asChild>
+              <Button size="icon" variant="ghost" className="h-8 w-8"
                 onClick={() => setPrompt('')}
               >
                 <X className="h-4 w-4" />
+                <span className="sr-only">Delete prompt</span>
               </Button>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="absolute bottom-1 right-0"
+              </TooltipTrigger>
+                <TooltipContent>
+                  <p>Delete prompt</p>
+                </TooltipContent>
+              </Tooltip>
+              </div>
+              <div className="absolute bottom-2 right-2">
+              <Tooltip>
+              <TooltipTrigger asChild>
+              <Button size="icon" variant="ghost" className="h-8 w-8"
                 onClick={handleEnhancePrompt}
               >
-                <Sparkles className="h-4 w-4" />
+                 {isProcessing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+                
+                <span className="sr-only">Enhance prompt</span>
               </Button>
+              </TooltipTrigger>
+                <TooltipContent>
+                  <p>Enhance prompt</p>
+                </TooltipContent>
+              </Tooltip>
+              </div>
             </>
           )}
+          </TooltipProvider>
         </div>
-
+        
         <div className="space-y-2">
           <Label>Creativity</Label>
           <Slider

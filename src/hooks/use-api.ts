@@ -181,8 +181,31 @@ export function useApi() {
     }
   };
 
+  const promptFromImage = async (file:File) => {
+    if (file.size > 10 * 1024*1024){
+      alert("File size exceeds maximum allowed 10MB");
+      return;
+    }
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await fetch('/api/ai/analyze-image', {
+      method: 'POST',
+      body: formData,
+    });
+  
+    if (!response.ok) {
+      throw new Error('Failed to generate prompt from image');
+    }
+  
+    const data = await response.json();
+    return data.prompt;
+  }
+
   return {
     enhancePrompt,
+    promptFromImage,
     generateImage,
     updateImage,
     deleteImage,
