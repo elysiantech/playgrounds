@@ -33,8 +33,10 @@ interface AspectRatio {
 }
 export const aspectRatios: AspectRatio[] = [
   { ratio: "1:1", label: "Square (Social Media)", width: 768, height: 768 },
-  { ratio: "4:3", label: "Classic (Standard)", width: 1024, height: 768 },
+  { ratio: "3:2", label: "Photo (35mm Still)", width: 1216, height: 832 },
+  { ratio: "4:3", label: "Classic (Standard TV)", width: 1024, height: 768 },
   { ratio: "5:4", label: "Photo (Large Format)", width: 1120, height: 896 },
   { ratio: "16:9", label: "Widescreen (Desktop)", width: 1376, height: 768 },
+  { ratio: "21:9", label: "Ultrawide (Cinematic/Monitor)", width: 1536, height: 640 },
   { ratio: "9:16", label: "Portrait (Mobile)", width: 736, height: 1344 },
 ];

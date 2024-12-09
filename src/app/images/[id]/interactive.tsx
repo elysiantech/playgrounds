@@ -49,11 +49,11 @@ export default function InteractiveImage({ image }: { image: ImageData }) {
     }
 
     return (
-        <div className="flex items-center justify-center w-full h-full relative overflow-hidden"
-            style={{ width: '100%', height: '100%' }}
-            onMouseEnter={() => setShowTools(true)}
-            onMouseLeave={() => setShowTools(false)}
-        >
+        <div className="relative max-w-full max-h-full flex items-center justify-center"
+              style={{ height: '100vh', width: '100%' }}
+              onMouseEnter={() => setShowTools(true)}
+              onMouseLeave={() => setShowTools(false)}
+            >
             <style jsx>{`
                 @keyframes kenburns {
                     0% { transform: scale(1) translate(0, 0); }
@@ -64,15 +64,15 @@ export default function InteractiveImage({ image }: { image: ImageData }) {
                     animation: kenburns 20s ease-in-out infinite;
                 }
             `}</style>
-            <div className="relative w-[80%] max-w-[1024px] h-auto kenburns-bg flex justify-center items-center">
-                <Image
-                    src={`/share/${image.url}`}
-                    alt={` Image ID:${image.id}`}
-                    className="object-contain rounded-lg shadow-lg"
-                    width={1024}
-                    height={1024}
-                    priority
-                />
+            <div className="relative w-full h-full max-w-full max-h-full kenburns-bg overflow-hidden">
+            <Image
+                src={`/share/${image.url}`}
+                alt={` Image ID:${image.id}`}
+                className="object-contain rounded-lg shadow-lg"
+                fill
+                sizes="100vw"
+                priority
+            />
             </div>
             {showTools && image && (
                 <>
@@ -104,7 +104,8 @@ export default function InteractiveImage({ image }: { image: ImageData }) {
                         </TooltipProvider>
                     </div>
                 </>
-            )}
+            )}           
         </div>
+
     );
 }
