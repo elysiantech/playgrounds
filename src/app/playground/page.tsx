@@ -1,6 +1,6 @@
 'use client'
 
-import React, { Suspense } from 'react'
+import React, { Suspense, useRef } from 'react'
 import { Upload, X, Sparkles, Trash2, Download, Expand, EyeOff, Eye, WandSparkles, ChevronLeft, ChevronRight, Info, Paperclip, Loader2 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import Image from 'next/image'
@@ -64,6 +64,7 @@ function Playground() {
   const { data: session, status } = useSession();
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [aspectRatio, setAspectRatio] = React.useState('4:3');
+  const wsRef = useRef<WebSocket | null>(null);
   const { enhancePrompt, generateImage, getImages, updateImage, deleteImage, upscaleImage, promptFromImage } = useApi()
 
   React.useEffect(() => {
@@ -107,6 +108,35 @@ function Playground() {
     if (status === 'loading' || !session?.user?.id)
       return
     const sessionId = session.user.id; 
+    const initializeWebSocket = () => {
+      const url = `wss://worker.tanso3d.workers.dev/api/agent/subscribe?connectionId=${sessionId}`
+      wsRef.current = new WebSocket(url);
+      wsRef.current.onmessage = (event) => { 
+        if (event.data === "pong") return;
+        const data = JSON.parse(event.data);
+        const { id, url, metadata } = data;
+        setGeneratedImages((prevImages) =>
+          prevImages.map((image) =>
+            image.id === id ? { ...image, url, metadata } : image
+          )
+        );
+      }
+      const keepAliveInterval = setInterval(() => {
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+            wsRef.current.send("ping");
+        } else clearInterval(keepAliveInterval);
+      }, 90000); // Send a ping every 90 seconds
+      wsRef.current.onclose = () => { 
+        console.log('WebSocket disconnected'); 
+        clearInterval(keepAliveInterval);
+        setTimeout(initializeWebSocket, 500); // Reconnect after 0.5 seconds
+      }
+    }
+    initializeWebSocket();
+    return () => {
+      wsRef!.current?.close()
+      wsRef!.current = null;
+    }
     const eventSource = new EventSource(`/api/ai/callback?sessionId=${sessionId}`);
     eventSource.onmessage = (event) => {
       try {

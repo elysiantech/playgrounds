@@ -34,12 +34,13 @@ export const POST = verifySignatureAppRouter(async (req: NextRequest) =>{
         },
     });
     
-    const clients = globalForClient.clients ;
-    console.log(`post clients has ${clients.size} entries`)
-    const encoder = new TextEncoder();
-    clients.forEach(client => {
-        client.enqueue(encoder.encode(`data: ${JSON.stringify(newImage)}\n\n`));
-    });
+    await notifyClient(id!, JSON.stringify(newImage))
+    // const clients = globalForClient.clients ;
+    // console.log(`post clients has ${clients.size} entries`)
+    // const encoder = new TextEncoder();
+    // clients.forEach(client => {
+    //     client.enqueue(encoder.encode(`data: ${JSON.stringify(newImage)}\n\n`));
+    // });
     return NextResponse.json({ message: 'Callback successfull' })
 });
 
@@ -70,7 +71,6 @@ export async function GET(req: NextRequest) {
                 clearInterval(interval);
                 clients.delete(controller);
             }
-            
         },
     })
 
@@ -81,5 +81,17 @@ export async function GET(req: NextRequest) {
             'Connection': 'keep-alive'
         }
     })
+}
+
+async function notifyClient(sessionId:string, message:string){
+    return await new Promise<void>((resolve, reject) => {
+        const websocket: WebSocket = new WebSocket(`wss://worker.tanso3d.workers.dev/api/agent/subscribe?connectionId=${sessionId}`);
+        websocket.onopen = () => {
+            websocket.send(JSON.stringify(message));
+            resolve()
+        }
+        websocket.onerror = () => reject();
+        websocket.onclose = () => resolve()
+    })  
 }
 
