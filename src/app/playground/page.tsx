@@ -1,6 +1,6 @@
 'use client'
 
-import React, { Suspense, useRef } from 'react'
+import React, { Suspense } from 'react'
 import { Upload, X, Sparkles, Trash2, Download, Expand, EyeOff, Eye, WandSparkles, ChevronLeft, ChevronRight, Info, Paperclip, Loader2 } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import Image from 'next/image'
@@ -34,7 +34,6 @@ import { processWithConcurrencyLimit } from '@/lib/utils'
 import { ImageData, aspectRatios } from '@/lib/types';
 import { SharePopover } from '@/components/share'
 import { Header } from '@/components/header';
-import { useSession } from 'next-auth/react';
 
 export default function PlaygroundPage() {
   return (
@@ -60,11 +59,9 @@ function Playground() {
   const [showTools, setShowTools] = React.useState(false)
   const [showInfoPanel, setShowInfoPanel] = React.useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false)
-  const [galleryHeight, setGalleryHeight] = React.useState(120);
-  const { data: session, status } = useSession();
+  const [galleryHeight, setGalleryHeight] = React.useState(128);
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [aspectRatio, setAspectRatio] = React.useState('4:3');
-  const wsRef = useRef<WebSocket | null>(null);
   const { enhancePrompt, generateImage, getImages, updateImage, deleteImage, upscaleImage, promptFromImage } = useApi()
 
   React.useEffect(() => {
@@ -100,66 +97,6 @@ function Playground() {
     if (numberOfImagesParam) setNumberOfImages(parseInt(numberOfImagesParam))
     if(aspectRatioParam) setAspectRatio(aspectRatioParam)
   }, [searchParams])
-
-  React.useEffect(() => {
-    if (process.env.NODE_ENV !== 'production') {
-      return;
-    }
-    if (status === 'loading' || !session?.user?.id)
-      return
-    const sessionId = session.user.id; 
-    const initializeWebSocket = () => {
-      const url = `wss://worker.tanso3d.workers.dev/api/agent/subscribe?connectionId=${sessionId}`
-      wsRef.current = new WebSocket(url);
-      wsRef.current.onmessage = (event) => { 
-        if (event.data === "pong") return;
-        const data = JSON.parse(event.data);
-        const { id, url, metadata } = data;
-        setGeneratedImages((prevImages) =>
-          prevImages.map((image) =>
-            image.id === id ? { ...image, url, metadata } : image
-          )
-        );
-      }
-      const keepAliveInterval = setInterval(() => {
-        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-            wsRef.current.send("ping");
-        } else clearInterval(keepAliveInterval);
-      }, 90000); // Send a ping every 90 seconds
-      wsRef.current.onclose = () => { 
-        console.log('WebSocket disconnected'); 
-        clearInterval(keepAliveInterval);
-        setTimeout(initializeWebSocket, 500); // Reconnect after 0.5 seconds
-      }
-    }
-    initializeWebSocket();
-    return () => {
-      wsRef!.current?.close()
-      wsRef!.current = null;
-    }
-    const eventSource = new EventSource(`/api/ai/callback?sessionId=${sessionId}`);
-    eventSource.onmessage = (event) => {
-      try {
-        if (event.data === 'ping')
-          return;
-        const data = JSON.parse(event.data);
-        const { id, url, metadata } = data;
-
-        // Update the generatedImages array
-        setGeneratedImages((prevImages) =>
-          prevImages.map((image) =>
-            image.id === id ? { ...image, url, metadata } : image
-          )
-        );
-      } catch (error) {
-        console.error('Error parsing event data:', error);
-      }
-    };
-
-    return () => {
-      eventSource.close();
-    };
-  }, [session, status ])
 
   const customLoader = ({ src, width, quality }: { src: string, width: number, quality?: number }) => {
     return `${src}?width=${width}&quality=${quality || 75}`;
@@ -368,16 +305,9 @@ function Playground() {
         break;
       case 'upscale':
       case 'aiExpand':
-        if (selectedImage) {
+        if (process.env.NODE_ENV !== 'production' && selectedImage) {
           await handleUpscaleImage(selectedImage)
         }
-        break;
-      case 'make3D':
-      case 'removeBackground':
-        toast({
-          title: "Feature not implemented",
-          description: `The ${action} feature is not yet implemented.`,
-        })
         break;
       default:
         console.log(`Performing ${action} on the image`)

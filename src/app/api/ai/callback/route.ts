@@ -35,12 +35,6 @@ export const POST = verifySignatureAppRouter(async (req: NextRequest) =>{
     });
     
     await notifyClient(id!, JSON.stringify(newImage))
-    // const clients = globalForClient.clients ;
-    // console.log(`post clients has ${clients.size} entries`)
-    // const encoder = new TextEncoder();
-    // clients.forEach(client => {
-    //     client.enqueue(encoder.encode(`data: ${JSON.stringify(newImage)}\n\n`));
-    // });
     return NextResponse.json({ message: 'Callback successfull' })
 });
 
@@ -59,7 +53,6 @@ export async function GET(req: NextRequest) {
             }, 30000); // Send a ping message ping 30 seconds
         
               // Store the controller in the clients map
-            console.log(`new client, has ${clients.size} entries`)
             req.signal.addEventListener("abort", () => {
                 console.log('stream canceled')
                 clearInterval(interval);
@@ -84,14 +77,11 @@ export async function GET(req: NextRequest) {
 }
 
 async function notifyClient(sessionId:string, message:string){
-    return await new Promise<void>((resolve, reject) => {
-        const websocket: WebSocket = new WebSocket(`wss://worker.tanso3d.workers.dev/api/agent/subscribe?connectionId=${sessionId}`);
-        websocket.onopen = () => {
-            websocket.send(JSON.stringify(message));
-            resolve()
-        }
-        websocket.onerror = () => reject();
-        websocket.onclose = () => resolve()
-    })  
+    const clients = globalForClient.clients ;
+    console.log(`post clients has ${clients.size} entries`)
+    const encoder = new TextEncoder();
+    clients.forEach(client => {
+        client.enqueue(encoder.encode(`data: ${JSON.stringify(message)}\n\n`));
+    });
 }
 
