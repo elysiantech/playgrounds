@@ -23,6 +23,7 @@ export default function InteractiveImage({ image }: { image: ImageData }) {
                     creativity: image.creativity.toString(),
                     steps: image.steps.toString(),
                     seed: String(image.seed),
+                    aspectRatio:image.aspectRatio || "4:3",
                     numberOfImages: "1",
                 }).toString();
                 router.push(`/playground?${params}`);
