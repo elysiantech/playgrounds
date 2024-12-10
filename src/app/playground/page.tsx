@@ -414,16 +414,38 @@ function Playground() {
       {/* Sidebar */}
       <aside className={`w-full md:w-64 border-r p-4 flex flex-col space-y-4 ${isSidebarOpen ? 'block' : 'hidden'} md:block`}>
         <div className="relative">
+        <div className="flex items-center justify-between mb-2">
           <Label>Prompt</Label>
+          {prompt && (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8"
+              onClick={() => setPrompt('')}
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">Delete prompt</span>
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Clear prompt</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    )}
+    </div>
           <Textarea
             placeholder="Enter your prompt here..."
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             onPaste={handlePaste}
-            className="min-h-[100px] pr-10 pb-10"
+            className="min-h-[100px]"
           />
           <TooltipProvider>
-          <div className="absolute bottom-2 left-2">
+          <div className="absolute bottom-2 left-2 bg-background/50 rounded-full p-1">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -447,22 +469,7 @@ function Playground() {
         </div>
           {prompt && (
             <>
-              <div className="absolute top-2 right-2">
-              <Tooltip>
-              <TooltipTrigger asChild>
-              <Button size="icon" variant="ghost" className="h-8 w-8"
-                onClick={() => setPrompt('')}
-              >
-                <X className="h-4 w-4" />
-                <span className="sr-only">Delete prompt</span>
-              </Button>
-              </TooltipTrigger>
-                <TooltipContent>
-                  <p>Delete prompt</p>
-                </TooltipContent>
-              </Tooltip>
-              </div>
-              <div className="absolute bottom-2 right-2">
+              <div className="absolute bottom-2 right-2 bg-background/50 rounded-full p-1">
               <Tooltip>
               <TooltipTrigger asChild>
               <Button size="icon" variant="ghost" className="h-8 w-8"
