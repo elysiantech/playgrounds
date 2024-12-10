@@ -18,7 +18,7 @@ export function Hero() {
       <div className="absolute inset-0 z-0">
         <div className="relative w-full h-full kenburns-bg">
         <Image
-          src="https://picsum.photos/1920/1080"
+          src="/b9efe6ca-b8ea-48e0-9168-9479c4d030b8.png"//"https://picsum.photos/1920/1080"
           alt="Background"
           layout="fill"
           objectFit="cover"
