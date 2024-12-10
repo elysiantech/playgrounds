@@ -29,7 +29,7 @@ export function Hero() {
       </div>
       <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
         <h1 className="text-5xl sm:text-6xl font-light mb-2 sm:mb-4 text-white tracking-wide">
-          New <span className="italic">Dimensions of Creativity</span> 
+          <span className="italic">Unleash Your Creativity</span> 
         </h1>
         <p className="text-lg sm:text-xl mb-8 text-white/90 font-light tracking-wide max-w-2xl mx-auto">
           Explore, remix, and create amazing images with AI. Transform your ideas into stunning visuals using our powerful image generation tools.
@@ -38,7 +38,7 @@ export function Hero() {
           href="/playground"
           className="px-6 py-3 text-blue-600 bg-white rounded-lg hover:bg-gray-100 transition-colors text-lg font-semibold"
         >
-          Generate an Image
+          Create for Free Today!
         </Link>
       </div>
       {/* Scroll Indicator */}
