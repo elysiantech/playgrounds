@@ -17,6 +17,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   images        Image[]
+  role          Role      @default(USER)
 }
 
 model Account {
@@ -69,4 +70,9 @@ model Image {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum Role {
+  USER   // Default role
+  ADMIN  // Role with more permissions
 }

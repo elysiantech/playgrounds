@@ -10,6 +10,15 @@ export async function GET(req: NextRequest) {
       skip: offset,
       take: limit,
       orderBy: { createdAt: "desc" },
+      where: {
+        user: {
+          role: "ADMIN", // Filter by user's role
+        },
+        // bookmark: true, // Filter where bookmark is true
+      },
+      include: {
+        user: true, // Optional: Include user data in the response
+      },
     });
   
     return new Response(JSON.stringify(images), {

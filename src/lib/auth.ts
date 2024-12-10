@@ -4,6 +4,14 @@ import GitHubProvider from "next-auth/providers/github";
 import prisma from "@/lib/prisma";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 
+declare module "next-auth" {
+  interface Session {
+    user?: {
+      id: string;
+      role?: string; 
+    } & User;
+  }
+}
 
 export const authOptions:NextAuthConfig = {
   pages: {

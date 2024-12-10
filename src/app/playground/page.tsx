@@ -34,6 +34,7 @@ import { processWithConcurrencyLimit } from '@/lib/utils'
 import { ImageData, aspectRatios } from '@/lib/types';
 import { SharePopover } from '@/components/share'
 import { Header } from '@/components/header';
+import { useSession } from 'next-auth/react'
 
 export default function PlaygroundPage() {
   return (
@@ -62,6 +63,8 @@ function Playground() {
   const [galleryHeight, setGalleryHeight] = React.useState(128);
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [aspectRatio, setAspectRatio] = React.useState('4:3');
+  const [canBookmark, setCanBookmark] = React.useState(false);
+  const { data:session, status} = useSession()
   const { enhancePrompt, generateImage, getImages, updateImage, deleteImage, upscaleImage, promptFromImage } = useApi()
 
   React.useEffect(() => {
@@ -77,6 +80,11 @@ function Playground() {
     })
   }, []);
 
+  React.useEffect(() => {
+    if (!session) return;
+    if (status !== 'authenticated') return
+    setCanBookmark(session.user?.role === "ADMIN");
+  },[session, status]);
   React.useEffect(() => {
     const promptParam = searchParams.get('prompt')
     const modelParam = searchParams.get('model')
@@ -670,7 +678,13 @@ function Playground() {
                             { icon: Download, label: 'Download', action: 'download' },
                             { icon: WandSparkles, label: 'Remix', action: 'remix' },
                             { icon: Info, label: 'Info', action: 'info' },
-                            { icon: selectedImage.bookmark ? Eye : EyeOff, label: selectedImage.bookmark ? 'Visible to Public':'Hidden From Public', action: 'bookmark' },
+                            ...(canBookmark
+                              ? [{ 
+                                  icon: selectedImage.bookmark ? Eye : EyeOff, 
+                                  label: selectedImage.bookmark ? 'Visible to Public' : 'Hidden From Public', 
+                                  action: 'bookmark' 
+                                }]
+                              : []),
                             { icon: Trash2, label: 'Delete', action: 'delete' },
                           ].map(({ icon: Icon, label, action }) => (
                             <Tooltip key={action}>
