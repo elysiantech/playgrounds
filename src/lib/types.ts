@@ -12,6 +12,15 @@ export interface ImageData {
   bookmark?: boolean;
   metadata: Record<string, string | number>;
   model: string
+  createdAt?: Date
+  style?: string
+  pose?: string
+  composition?: string
+}
+
+export interface Generation {
+  images: ImageData[],
+  createdAt: Date
 }
 
 export interface GenerateImageParams {
@@ -19,10 +28,13 @@ export interface GenerateImageParams {
   creativity: number;
   steps: number;
   seed: string;
-  refImage?: string; 
   model: string;
   numberOfImages: number;
   aspectRatio?:string;
+  refImage?: string; 
+  style?: string
+  pose?: string
+  composition?: string
 }
 
 interface AspectRatio {
