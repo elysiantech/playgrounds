@@ -14,6 +14,10 @@ import { Sidebar } from '@/components/Sidebar';
 import { GeneratedImage } from '@/components/GeneratedImage'
 import { ImageGallery } from '@/components/ImageGallery'
 import { useSession } from 'next-auth/react'
+import { generatePlaceholderImage } from '@/lib/utils'
+import { aspectRatios } from '@/lib/types';
+import Pusher from "pusher-js";
+
 
 export default function PlaygroundPage() {
   return (
@@ -34,7 +38,10 @@ function Playground() {
   const [canBookmark, setCanBookmark] = React.useState(false);
   const { data:session, status} = useSession()
   const { generateImage, getImages, updateImage, deleteImage, upscaleImage } = useApi()
-
+  const aspectRatioMap = Object.fromEntries(
+    aspectRatios.map((ar) => [ar.ratio, { width: ar.width, height: ar.height }])
+  );
+  
   React.useEffect(() => {
     const savedTheme = localStorage.getItem('theme')
     if (savedTheme) {
@@ -47,11 +54,34 @@ function Playground() {
       setGeneratedImages(parsedImages)
     })
   }, []);
-
+  
   React.useEffect(() => {
     if (!session) return;
     if (status !== 'authenticated') return
+    if (!session.user?.id) return
     setCanBookmark(session.user?.role === "ADMIN");
+
+    const sessionId = session.user?.id;
+    const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
+      // wsHost: pusherConfig.host,
+      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
+      // wsPort: parseInt(pusherConfig.port, 10),
+      // forceTLS: false,
+      // enabledTransports: ["ws", "wss"],
+    });
+
+    pusher
+      .subscribe(sessionId)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .bind('imageUpdated', (updateImage:any) => {
+        setGeneratedImages((prev) => {
+          return prev.map((image) =>
+            image.id === updateImage.id ? { ...image, url: `${updateImage.url}`, metadata: updateImage.metadata} : image
+          );
+        });
+      });
+      
+    return () => pusher.unsubscribe(sessionId);
   },[session, status]);
 
   React.useEffect(() => {
@@ -78,11 +108,12 @@ function Playground() {
   }, [searchParams])
 
   const handleGenerateImage = async (params:GenerateImageParams) => {
-    
+    const { width, height } = aspectRatioMap[ params.aspectRatio?? '4:3']
+    const imageUrl = generatePlaceholderImage('Generating...', 'almost there', width, height)
     const newImages: ImageData[] = Array.from({ length: params.numberOfImages }, () => {
       const uniqueSeed = params.seed === 'random' ? Math.floor(Math.random() * 2 ** 32) : parseInt(params.seed);
       return {
-        url: `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='512' height='512' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' font-size='24' text-anchor='middle' dy='.3em' fill='%23999'%3EGenerating...%3C/text%3E%3C/svg%3E`,
+        url: imageUrl,
         prompt: params.prompt!,
         model: params.model,
         creativity: params.creativity,
@@ -140,12 +171,13 @@ function Playground() {
     }
   }
   const handleUpscaleImage = async (image: ImageData) => {
-
+    const { width, height } = aspectRatioMap[ image.aspectRatio?? '4:3']
+    const imageUrl = generatePlaceholderImage('Upscaling...', '', width, height)
     const newImage: ImageData = {
       ...image,
       id: undefined,
-      url: `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='512' height='512' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%23f0f0f0'/%3E%3Ctext x='50%25' y='50%25' font-size='24' text-anchor='middle' dy='.3em' fill='%23999'%3EUpscaling...%3C/text%3E%3C/svg%3E`,
-    };
+      url: imageUrl,
+      };
 
     try {
       // Temporarily set placeholder images
