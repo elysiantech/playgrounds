@@ -1,23 +1,20 @@
 'use client'
 
 import React, { Suspense } from 'react'
-import {ChevronLeft, ChevronRight } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { useSearchParams } from 'next/navigation'
-import { Button } from '@/components/ui/button'
 import { toast } from '@/hooks/use-toast'
 import { useApi } from "@/hooks/use-api"
-import { processWithConcurrencyLimit } from '@/lib/utils'
 import { ImageData, GenerateImageParams } from '@/lib/types';
 import { Header } from '@/components/header';
 import { Sidebar } from '@/components/Sidebar';
 import { GeneratedImage } from '@/components/GeneratedImage'
 import { ImageGallery } from '@/components/ImageGallery'
 import { useSession } from 'next-auth/react'
-import { generatePlaceholderImage } from '@/lib/utils'
+import { generatePlaceholderImage, processWithConcurrencyLimit } from '@/lib/utils'
 import { aspectRatios } from '@/lib/types';
-import Pusher from "pusher-js";
-
+import { pusherClient } from "@/lib/pusher-client";
+import { ImageNavigation } from "@/components/ImageNavigation"
 
 export default function PlaygroundPage() {
   return (
@@ -33,11 +30,11 @@ function Playground() {
   const [generateParams, setGenerateParams] = React.useState<GenerateImageParams | null>(null)
   const [generatedImages, setGeneratedImages] = React.useState<ImageData[]>([])
   const [selectedImage, setSelectedImage] = React.useState<ImageData | null>(null)
-  const [showInfoPanel, setShowInfoPanel] = React.useState(false)
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false)
   const [canBookmark, setCanBookmark] = React.useState(false);
   const { data:session, status} = useSession()
   const { generateImage, getImages, updateImage, deleteImage, upscaleImage } = useApi()
+  
   const aspectRatioMap = Object.fromEntries(
     aspectRatios.map((ar) => [ar.ratio, { width: ar.width, height: ar.height }])
   );
@@ -62,11 +59,8 @@ function Playground() {
     setCanBookmark(session.user?.role === "ADMIN");
 
     const sessionId = session.user?.id;
-    const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
-      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
-    });
-
-    pusher
+    
+    pusherClient
       .subscribe(sessionId)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .bind('imageUpdated', (updateImage:any) => {
@@ -79,7 +73,7 @@ function Playground() {
     
           // If the selected image matches the updated one, update it
           const matchingImage = updatedImages.find((image) => image.id === updateImage.id);
-          if (selectedImage?.id === updateImage.id && matchingImage) {
+          if (matchingImage && selectedImage?.id === updateImage.id) {
             setSelectedImage({...matchingImage});
           }
     
@@ -87,8 +81,8 @@ function Playground() {
         });
       });
       
-    return () => pusher.unsubscribe(sessionId);
-  },[session, status]);
+    return () => pusherClient.unsubscribe(sessionId);
+  },[session, status, selectedImage]);
 
   React.useEffect(() => {
     if (searchParams.size > 0) {
@@ -176,43 +170,6 @@ function Playground() {
       })
     }
   }
-  const handleUpscaleImage = async (image: ImageData) => {
-    const { width, height } = aspectRatioMap[ image.aspectRatio?? '4:3']
-    const imageUrl = generatePlaceholderImage('Upscaling...', '', width, height)
-    const newImage: ImageData = {
-      ...image,
-      id: undefined,
-      url: imageUrl,
-      };
-
-    try {
-      // Temporarily set placeholder images
-      setGeneratedImages(prev => [newImage, ...prev]);
-      setSelectedImage(newImage);
-
-      const upscaledImage = await upscaleImage(image.id!);
-
-      // Update newImages with the generated URLs
-      newImage.id = upscaledImage.id;
-      newImage.url = `${upscaledImage.url}`;
-      newImage.metadata = upscaledImage.metadata
-
-      // Update the state with the generated images
-      setGeneratedImages(prev => [newImage, ...prev.slice(1)]);
-      setSelectedImage(newImage);
-
-    } catch (error) {
-      console.error('Error generating image:', error)
-      // Remove set placeholder image
-      setGeneratedImages(prev => [...prev.slice(1)]);
-      setSelectedImage(null);
-      toast({
-        title: "Error",
-        description: "Failed to upscale image. Please try again.",
-        variant: "destructive",
-      })
-    }
-  }
 
   const handleImageAction = async (action: string) => {
     switch (action) {
@@ -271,9 +228,6 @@ function Playground() {
           }
         }
         break;
-      case 'info':
-        setShowInfoPanel(!showInfoPanel)
-        break;
       case 'upscale':
       case 'aiExpand':
         if (process.env.NODE_ENV !== 'production' && selectedImage) {
@@ -282,6 +236,50 @@ function Playground() {
         break;
       default:
         console.log(`Performing ${action} on the image`)
+    }
+  }
+
+  const handleUpscaleImage = async (image: ImageData) => {
+    const { width, height } = aspectRatioMap[ image.aspectRatio?? '4:3']
+    const imageUrl = generatePlaceholderImage('Upscaling...', '', width, height)
+    const newImage: ImageData = {
+      ...image,
+      id: undefined,
+      url: imageUrl,
+      };
+
+    try {
+      // Temporarily set placeholder images
+      setGeneratedImages(prev => [newImage, ...prev]);
+      setSelectedImage(newImage);
+
+      const upscaledImage = await upscaleImage(image.id!);
+
+      // Update newImages with the generated URLs
+      newImage.id = upscaledImage.id;
+      newImage.url = `${upscaledImage.url}`;
+      newImage.metadata = upscaledImage.metadata
+
+      // Update the placeholder with the generated images
+      setGeneratedImages((prev) => {
+        return prev.map((image) =>
+          image.id === newImage.id
+            ? { ...image, url: `${newImage.url}`, metadata: newImage.metadata }
+            : image
+        );
+      });
+      setSelectedImage({...newImage});
+
+    } catch (error) {
+      console.error('Error generating image:', error)
+      // Remove set placeholder image
+      setGeneratedImages(prev => [...prev.slice(1)]);
+      setSelectedImage(null);
+      toast({
+        title: "Error",
+        description: "Failed to upscale image. Please try again.",
+        variant: "destructive",
+      })
     }
   }
 
@@ -361,40 +359,9 @@ function Playground() {
             onAction={handleImageAction} 
             canBookmark={canBookmark} 
           />
-          {selectedImage && (
-            <>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-background/40 backdrop-blur-md rounded-full"
-                onClick={() => {
-                  const currentIndex = generatedImages.findIndex(img => img.id === selectedImage.id);
-                  if (currentIndex > 0) {
-                    setSelectedImage(generatedImages[currentIndex - 1]);
-                  }
-                }}
-                disabled={generatedImages.indexOf(selectedImage) === 0}
-              >
-                <ChevronLeft className="h-4 w-4" />
-                <span className="sr-only">Previous image</span>
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-background/40 backdrop-blur-md rounded-full"
-                onClick={() => {
-                  const currentIndex = generatedImages.findIndex(img => img.id === selectedImage.id);
-                  if (currentIndex < generatedImages.length - 1) {
-                    setSelectedImage(generatedImages[currentIndex + 1]);
-                  }
-                }}
-                disabled={generatedImages.indexOf(selectedImage) === generatedImages.length - 1}
-              >
-                <ChevronRight className="h-4 w-4" />
-                <span className="sr-only">Next image</span>
-              </Button>
-            </>
-          )}
+          { selectedImage ? (
+                  <ImageNavigation  images={generatedImages} selectedImage={selectedImage} setSelectedImage={setSelectedImage} />)
+                  :(null)}
           </div>
           {/* Generated images row */}
           <ImageGallery generatedImages={generatedImages} onImageSelect={setSelectedImage} />

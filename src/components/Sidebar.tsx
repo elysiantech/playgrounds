@@ -1,5 +1,5 @@
 import React from 'react'
-import { Upload, X, Sparkles,  Paperclip, Loader2 } from 'lucide-react'
+import { Upload, X, Sparkles, Paperclip, Loader2 } from 'lucide-react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -26,13 +26,13 @@ import { useApi } from "@/hooks/use-api"
 import { GenerateImageParams, aspectRatios } from '@/lib/types';
 
 
-interface FloatingToolbarProps {
-    params?: GenerateImageParams
-    isOpen?: boolean
-    onGenerate: (params: GenerateImageParams) => void
-  }
-  
-export const Sidebar: React.FC<FloatingToolbarProps> = ({ params, onGenerate, isOpen=true }) => {  
+interface SidebarProps {
+  params?: GenerateImageParams
+  isOpen?: boolean
+  onGenerate: (params: GenerateImageParams) => void
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ params, onGenerate, isOpen = true }) => {
   const [prompt, setPrompt] = React.useState('')
   const [creativity, setCreativity] = React.useState(5)
   const [steps, setSteps] = React.useState(50)
@@ -46,18 +46,18 @@ export const Sidebar: React.FC<FloatingToolbarProps> = ({ params, onGenerate, is
   const { enhancePrompt, promptFromImage } = useApi()
 
   React.useEffect(() => {
-    if (params){
-        setPrompt(params.prompt!)
-        setModel(params.model)
-        setCreativity(params.creativity)
-        setSteps(params.steps)
-        if (params.seed !== 'random') {
-            setSeed('fixed')
-            setFixedSeed(params.seed)
-        }
-        setNumberOfImages(params.numberOfImages)
-        setAspectRatio(params.aspectRatio!)
-        setRefImage(params.refImage!)
+    if (params) {
+      setPrompt(params.prompt!)
+      setModel(params.model)
+      setCreativity(params.creativity)
+      setSteps(params.steps)
+      if (params.seed !== 'random') {
+        setSeed('fixed')
+        setFixedSeed(params.seed)
+      }
+      setNumberOfImages(params.numberOfImages)
+      setAspectRatio(params.aspectRatio!)
+      setRefImage(params.refImage!)
     }
   }, [params])
 
@@ -70,7 +70,7 @@ export const Sidebar: React.FC<FloatingToolbarProps> = ({ params, onGenerate, is
       seed,
       model,
       steps,
-      refImage:refImage!,
+      refImage: refImage!,
     }
     onGenerate(params)
   }
@@ -109,10 +109,10 @@ export const Sidebar: React.FC<FloatingToolbarProps> = ({ params, onGenerate, is
 
   const handlePaste = async (event: React.ClipboardEvent<HTMLTextAreaElement>) => {
     const items = (event.clipboardData).items;
-    for(let i=0; i < items.length; i++){
+    for (let i = 0; i < items.length; i++) {
       if (items[i].type.indexOf('image') !== -1) {
         const file = items[i].getAsFile();
-        if (file){
+        if (file) {
           setIsProcessing(true)
           const newPrompt = await promptFromImage(file);
           setPrompt(newPrompt);
@@ -129,7 +129,7 @@ export const Sidebar: React.FC<FloatingToolbarProps> = ({ params, onGenerate, is
     const input = document.createElement('input')
     input.type = 'file'
     input.accept = 'image/*'
-    input.onchange =async () => {
+    input.onchange = async () => {
       if (!input.files?.length) return;
       const file = input.files[0];
       setIsProcessing(true)
@@ -146,118 +146,121 @@ export const Sidebar: React.FC<FloatingToolbarProps> = ({ params, onGenerate, is
 
   const handleEnhancePrompt = async () => {
     try {
+      setIsProcessing(true)
       const enhancedPrompt = await enhancePrompt(prompt)
       setPrompt(enhancedPrompt)
+      setIsProcessing(false)
     } catch (error) {
       console.error('Error enhancing prompt:', error)
+      setIsProcessing(false)
     }
   }
 
   return (
     <aside className={`w-full md:w-64 border-r p-4 flex flex-col space-y-4 ${isOpen ? 'block' : 'hidden'} md:block`}>
-        <div className="relative">
+      <div className="relative">
         <div className="flex items-center justify-between mb-2">
           <Label>Prompt</Label>
           {prompt && (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              size="icon"
-              variant="ghost"
-              className="h-8 w-8"
-              onClick={() => setPrompt('')}
-            >
-              <X className="h-4 w-4" />
-              <span className="sr-only">Delete prompt</span>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Clear prompt</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    )}
-    </div>
-          <Textarea
-            placeholder="Enter your prompt here..."
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            onPaste={handlePaste}
-            className="min-h-[100px]"
-          />
-          <TooltipProvider>
-          <div className="absolute bottom-2 left-2 bg-background/50 rounded-full p-1">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={handleAttachImage}
-              >
-                 {isProcessing ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Paperclip className="h-4 w-4" />
-                )}
-                <span className="sr-only">Attach an image</span>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Attach an image</p>
-            </TooltipContent>
-          </Tooltip>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8"
+                    onClick={() => setPrompt('')}
+                  >
+                    <X className="h-4 w-4" />
+                    <span className="sr-only">Delete prompt</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Clear prompt</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </div>
+        <Textarea
+          placeholder="Describe your image here..."
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          onPaste={handlePaste}
+          className="min-h-[100px]"
+        />
+        <TooltipProvider>
+          <div className="absolute bottom-2 left-2 bg-background/50 rounded-full p-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={handleAttachImage}
+                >
+                  {isProcessing ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Paperclip className="h-4 w-4" />
+                  )}
+                  <span className="sr-only">Attach an image</span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Attach an image</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
           {prompt && (
             <>
               <div className="absolute bottom-2 right-2 bg-background/50 rounded-full p-1">
-              <Tooltip>
-              <TooltipTrigger asChild>
-              <Button size="icon" variant="ghost" className="h-8 w-8"
-                onClick={handleEnhancePrompt}
-              >
-                 {isProcessing ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Sparkles className="h-4 w-4" />
-                )}
-                
-                <span className="sr-only">Enhance prompt</span>
-              </Button>
-              </TooltipTrigger>
-                <TooltipContent>
-                  <p>Enhance prompt</p>
-                </TooltipContent>
-              </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button size="icon" variant="ghost" className="h-8 w-8"
+                      onClick={handleEnhancePrompt}
+                    >
+                      {isProcessing ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-4 w-4" />
+                      )}
+
+                      <span className="sr-only">Enhance prompt</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Enhance prompt</p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
             </>
           )}
-          </TooltipProvider>
+        </TooltipProvider>
+      </div>
+
+      <div className="space-y-2">
+        <Label>Creativity</Label>
+        <Slider
+          value={[creativity]}
+          onValueChange={(values) => setCreativity(values[0])}
+          max={10}
+          step={1}
+        />
+        <div className="flex justify-between text-xs">
+          <span>Creative</span>
+          <span>Balanced</span>
+          <span>Precise</span>
         </div>
-        
-        <div className="space-y-2">
-          <Label>Creativity</Label>
-          <Slider
-            value={[creativity]}
-            onValueChange={(values) => setCreativity(values[0])}
-            max={10}
-            step={1}
-          />
-          <div className="flex justify-between text-xs">
-            <span>Creative</span>
-            <span>Balanced</span>
-            <span>Precise</span>
-          </div>
-        </div>
-        <Accordion type="single" collapsible className="w-full">
-          <AccordionItem value="outputsize">
-            <AccordionTrigger>Output Size</AccordionTrigger>
-            <AccordionContent className="space-y-4">
+      </div>
+      <Accordion type="single" collapsible className="w-full">
+        <AccordionItem value="outputsize">
+          <AccordionTrigger>Output Size</AccordionTrigger>
+          <AccordionContent className="space-y-4">
             <Select value={aspectRatio} onValueChange={setAspectRatio}>
-            <SelectTrigger key={aspectRatio} className="w-full flex items-center">
-              <SelectValue placeholder="Select aspect ratio" />
-            </SelectTrigger>
+              <SelectTrigger key={aspectRatio} className="w-full flex items-center">
+                <SelectValue placeholder="Select aspect ratio" />
+              </SelectTrigger>
               <SelectContent>
                 {aspectRatios.map((ar) => (
                   <SelectItem key={ar.ratio} value={ar.ratio}>
@@ -269,115 +272,115 @@ export const Sidebar: React.FC<FloatingToolbarProps> = ({ params, onGenerate, is
                 ))}
               </SelectContent>
             </Select>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
-        <Accordion type="single" collapsible className="w-full">
-          <AccordionItem value="advanced">
-            <AccordionTrigger>Advanced</AccordionTrigger>
-            <AccordionContent className="space-y-4">
-              <Card className="w-full">
-                <CardContent className="p-4 flex flex-col items-center relative">
-                  <Label htmlFor="image-upload" className="cursor-pointer">
-                    {refImage ? (
-                      <Image
-                        src={refImage}
-                        alt="Uploaded"
-                        width={100}
-                        height={100}
-                        className="rounded-md object-cover"
-                      />
-                    ) : (
-                      <div className="w-24 h-24 bg-muted rounded-md flex items-center justify-center">
-                        <Upload className="w-8 h-8 text-muted-foreground" />
-                      </div>
-                    )}
-                  </Label>
-                  <Input
-                    id="image-upload"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleImageUpload}
-                  />
-                  {refImage && (
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      className="absolute top-2 right-2"
-                      onClick={clearRefImage}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+      <Accordion type="single" collapsible className="w-full">
+        <AccordionItem value="advanced">
+          <AccordionTrigger>Advanced</AccordionTrigger>
+          <AccordionContent className="space-y-4">
+            <Card className="w-full">
+              <CardContent className="p-4 flex flex-col items-center relative">
+                <Label htmlFor="image-upload" className="cursor-pointer">
+                  {refImage ? (
+                    <Image
+                      src={refImage}
+                      alt="Uploaded"
+                      width={100}
+                      height={100}
+                      className="rounded-md object-cover"
+                    />
+                  ) : (
+                    <div className="w-24 h-24 bg-muted rounded-md flex items-center justify-center">
+                      <Upload className="w-8 h-8 text-muted-foreground" />
+                    </div>
                   )}
-                  <span className="mt-2 text-sm font-medium">Image</span>
-                </CardContent>
-              </Card>
-              <div className="space-y-2">
-                <Label>Steps</Label>
-                <Slider
-                  value={[steps]}
-                  onValueChange={(values) => setSteps(values[0])}
-                  max={100}
-                  step={1}
-                />
-                <div className="flex justify-between text-xs">
-                  <span>Fast</span>
-                  <span>Balanced</span>
-                  <span>High</span>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="seed-mode"
-                  checked={seed === 'fixed'}
-                  onCheckedChange={(checked) => setSeed(checked ? 'fixed' : 'random')}
-                />
-                <Label htmlFor="seed-mode">Seed: {seed === 'random' ? 'Random' : 'Fixed'}</Label>
-              </div>
-              {seed === 'fixed' && (
+                </Label>
                 <Input
-                  type="number"
-                  placeholder="Enter seed"
-                  value={fixedSeed}
-                  onChange={(e) => setFixedSeed(e.target.value)}
+                  id="image-upload"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleImageUpload}
                 />
-              )}
-              <div className="space-y-2">
-                <Label htmlFor="model">Model</Label>
-                <Select value={model} onValueChange={setModel}>
-                  <SelectTrigger id="model">
-                    <SelectValue placeholder="Select a model" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Flux.1-Schnell">Flux.1-Schnell</SelectItem>
-                    <SelectItem value="Flux.1-dev">Flux.1-dev</SelectItem>
-                    <SelectItem value="Flux.1-Redux">Flux.1-Redux</SelectItem>
-                  </SelectContent>
-                </Select>
+                {refImage && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="absolute top-2 right-2"
+                    onClick={clearRefImage}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+                <span className="mt-2 text-sm font-medium">Image</span>
+              </CardContent>
+            </Card>
+            <div className="space-y-2">
+              <Label>Steps</Label>
+              <Slider
+                value={[steps]}
+                onValueChange={(values) => setSteps(values[0])}
+                max={100}
+                step={1}
+              />
+              <div className="flex justify-between text-xs">
+                <span>Fast</span>
+                <span>Balanced</span>
+                <span>High</span>
               </div>
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="seed-mode"
+                checked={seed === 'fixed'}
+                onCheckedChange={(checked) => setSeed(checked ? 'fixed' : 'random')}
+              />
+              <Label htmlFor="seed-mode">Seed: {seed === 'random' ? 'Random' : 'Fixed'}</Label>
+            </div>
+            {seed === 'fixed' && (
+              <Input
+                type="number"
+                placeholder="Enter seed"
+                value={fixedSeed}
+                onChange={(e) => setFixedSeed(e.target.value)}
+              />
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="model">Model</Label>
+              <Select value={model} onValueChange={setModel}>
+                <SelectTrigger id="model">
+                  <SelectValue placeholder="Select a model" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Flux.1-Schnell">Flux.1-Schnell</SelectItem>
+                  <SelectItem value="Flux.1-dev">Flux.1-dev</SelectItem>
+                  <SelectItem value="Flux.1-Redux">Flux.1-Redux</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
 
-        <div className="space-y-2">
-          <Label>Number of images</Label>
-          <Slider
-            value={[numberOfImages]}
-            onValueChange={(values) => setNumberOfImages(values[0])}
-            min={1}
-            max={8}
-            step={1}
-          />
-          <div className="flex justify-between">
-            <span>{numberOfImages}</span>
-          </div>
+      <div className="space-y-2">
+        <Label>Number of images</Label>
+        <Slider
+          value={[numberOfImages]}
+          onValueChange={(values) => setNumberOfImages(values[0])}
+          min={1}
+          max={8}
+          step={1}
+        />
+        <div className="flex justify-between">
+          <span>{numberOfImages}</span>
         </div>
+      </div>
 
-        <Button className="w-full" onClick={handleGenerateImage}>
-          <Sparkles className="mr-2 h-4 w-4" /> Generate
-        </Button>
-      </aside>
+      <Button className="w-full" onClick={handleGenerateImage}>
+        <Sparkles className="mr-2 h-4 w-4" /> Generate
+      </Button>
+    </aside>
   )
 }
 
