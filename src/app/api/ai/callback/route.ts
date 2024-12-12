@@ -4,15 +4,10 @@ import pusher from '@/lib/pusher';
 
 import { verifySignatureAppRouter } from "@upstash/qstash/nextjs";
 
-export const config = {
-    runtime: 'edge', // Use Edge runtime for long-lived connections
-};
-
 export const POST = verifySignatureAppRouter(async (req: NextRequest) =>{
-// export async function POST (req: NextRequest) {
     const { searchParams } = req.nextUrl;
     const id  = searchParams.get('id');
-    const sessionId  = searchParams.get('sessionId');
+    // const sessionId  = searchParams.get('sessionId');
     const body = await req.json(); 
 
     const messageId = body?.sourceMessageId
@@ -32,7 +27,7 @@ export const POST = verifySignatureAppRouter(async (req: NextRequest) =>{
     });
     const message = JSON.stringify(newImage)
     
-    await pusher.trigger(sessionId!, 'imageUpdated', message);
+    await pusher.trigger('default', 'imageUpdated', message);
     return NextResponse.json(message)
 });
 
