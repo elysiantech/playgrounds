@@ -60,7 +60,7 @@ export const GeneratedImage: React.FC<GeneratedImageProps> = ({ selectedImage, o
                           <Button
                             size="icon"
                             variant='ghost'
-                            className="text-foreground/90 hover:text-foreground"
+                            className="text-foreground/90 hover:text-foreground h-6 w-6"
                             onClick={() => action === 'info' ? setShowInfoPanel(true) : onAction(action)}
                           >
                             <Icon className={`h-3 w-3`} />

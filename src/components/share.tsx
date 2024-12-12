@@ -26,8 +26,8 @@ export function SharePopover({ url }: SharePopoverProps) {
         <Tooltip>
           <TooltipTrigger asChild>
             <PopoverTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Globe className="w-5 h-5" />
+              <Button variant="ghost" size="icon" className="h-6 w-6">
+                <Globe className="w-3 h-3" />
               </Button>
             </PopoverTrigger>
           </TooltipTrigger>
