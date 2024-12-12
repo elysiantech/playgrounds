@@ -63,11 +63,7 @@ function Playground() {
 
     const sessionId = session.user?.id;
     const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY!, {
-      // wsHost: pusherConfig.host,
       cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER!,
-      // wsPort: parseInt(pusherConfig.port, 10),
-      // forceTLS: false,
-      // enabledTransports: ["ws", "wss"],
     });
 
     pusher
@@ -75,9 +71,19 @@ function Playground() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .bind('imageUpdated', (updateImage:any) => {
         setGeneratedImages((prev) => {
-          return prev.map((image) =>
-            image.id === updateImage.id ? { ...image, url: `${updateImage.url}`, metadata: updateImage.metadata} : image
+          const updatedImages = prev.map((image) =>
+            image.id === updateImage.id
+              ? { ...image, url: `${updateImage.url}`, metadata: updateImage.metadata }
+              : image
           );
+    
+          // If the selected image matches the updated one, update it
+          const matchingImage = updatedImages.find((image) => image.id === updateImage.id);
+          if (selectedImage?.id === updateImage.id && matchingImage) {
+            setSelectedImage({...matchingImage});
+          }
+    
+          return updatedImages;
         });
       });
       

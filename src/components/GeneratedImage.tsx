@@ -18,6 +18,10 @@ export const GeneratedImage: React.FC<GeneratedImageProps> = ({ selectedImage, o
   const [showTools, setShowTools] = React.useState(false)
   const [showInfoPanel, setShowInfoPanel] = React.useState(false)
   
+  const customLoader = ({ src, width, quality }: { src: string, width: number, quality?: number }) => {
+    return `${src}?width=${Math.min(width, 1536)}&quality=${quality || 75}`;
+  };
+
   return (
     <div className="flex-1 p-4 flex items-center justify-center overflow-hidden" style={{ height: '100%'}}>
       <div
@@ -29,6 +33,7 @@ export const GeneratedImage: React.FC<GeneratedImageProps> = ({ selectedImage, o
         {selectedImage ? (
           <div className="relative w-full h-full max-w-full max-h-full overflow-hidden" style={{ height: '100%' }}>
             <Image
+              loader={customLoader}
               src={selectedImage.url.startsWith('data:image')? selectedImage.url: `/share/${selectedImage.url}`}
               alt="Generated image"
               className="object-contain rounded-lg shadow-lg"

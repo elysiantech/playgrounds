@@ -7,7 +7,7 @@ import { verifySignatureAppRouter } from "@upstash/qstash/nextjs";
 export const POST = verifySignatureAppRouter(async (req: NextRequest) =>{
     const { searchParams } = req.nextUrl;
     const id  = searchParams.get('id');
-    // const sessionId  = searchParams.get('sessionId');
+    const sessionId  = searchParams.get('sessionId');
     const body = await req.json(); 
 
     const messageId = body?.sourceMessageId
@@ -27,7 +27,7 @@ export const POST = verifySignatureAppRouter(async (req: NextRequest) =>{
     });
     const message = JSON.stringify(newImage)
     
-    await pusher.trigger('default', 'imageUpdated', message);
+    await pusher.trigger(sessionId as string, 'imageUpdated', message);
     return NextResponse.json(message)
 });
 
