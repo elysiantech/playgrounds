@@ -85,26 +85,27 @@ function Playground() {
   },[session, status, selectedImage]);
 
   React.useEffect(() => {
-    if (searchParams.size > 0) {
-      const params: GenerateImageParams = {
-        prompt: searchParams.get('prompt') || undefined,
-        creativity: parseFloat(searchParams.get('creativity') || '0'),
-        steps: parseInt(searchParams.get('steps') || '0', 10),
-        seed: searchParams.get('seed') || 'random',
-        model: searchParams.get('model') || 'Flux.1-Schnell',
-        numberOfImages: parseInt(searchParams.get('numberOfImages') || '0', 10),
-        aspectRatio: searchParams.get('aspectRatio') || undefined,
-        refImage: searchParams.get('refImage') || undefined,
-        style: searchParams.get('style') || undefined,
-        pose: searchParams.get('pose') || undefined,
-        composition: searchParams.get('composition') || undefined,
-      };
-      
-      setGenerateParams((prev) => ({
-        ...prev,
-        ...params,
-      }));
-    }
+    if (searchParams.get('id')){
+      const id = searchParams.get('id');
+      fetch(`/api/public/images/${id}`)
+      .then(response => response.json())
+      .then(imageParams => {
+        const params: GenerateImageParams = {
+          prompt: imageParams.prompt || undefined,
+          creativity: imageParams.creativity,
+          steps: imageParams.steps,
+          seed: imageParams.seed,
+          model: imageParams.model,
+          numberOfImages: 1,
+          aspectRatio: imageParams.aspectRatio,
+          refImage: imageParams.refImage || undefined,
+          style: imageParams.style || undefined,
+          pose: imageParams.pose || undefined,
+          composition: imageParams.composition || undefined,
+        };
+        setGenerateParams((prev) => ({...prev, ...params}));
+      });            
+    } 
   }, [searchParams])
 
   const handleGenerateImage = async (params:GenerateImageParams) => {

@@ -17,15 +17,7 @@ export default function InteractiveImage({ image }: { image: ImageData }) {
     const handleImageAction = async (action: string) => {
         switch (action) {
             case 'remix':
-                const params = new URLSearchParams({
-                    prompt: image.prompt,
-                    model: image.model,
-                    creativity: image.creativity.toString(),
-                    steps: image.steps.toString(),
-                    seed: String(image.seed),
-                    aspectRatio:image.aspectRatio || "4:3",
-                    numberOfImages: "1",
-                }).toString();
+                const params = new URLSearchParams({ id:image.id! })
                 router.push(`/playground?${params}`);
                 break;
             case 'download':
