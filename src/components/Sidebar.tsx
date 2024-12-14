@@ -284,7 +284,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ params, onGenerate, isOpen = t
                 <Label htmlFor="image-upload" className="cursor-pointer">
                   {refImage ? (
                     <Image
-                      src={refImage}
+                      src={refImage.startsWith('data:image')? refImage: `/share/${refImage}`}
                       alt="Uploaded"
                       width={100}
                       height={100}

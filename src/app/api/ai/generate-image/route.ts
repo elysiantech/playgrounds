@@ -14,6 +14,16 @@ const aspectRatioMap = Object.fromEntries(
   aspectRatios.map((ar) => [ar.ratio, { width: ar.width, height: ar.height }])
 );
 
+export async function processBase64Image(content: string): Promise<string> {
+  const [mimePart, base64Image] = content.split(",");
+  const mimeMatch = mimePart.match(/data:image\/([a-zA-Z]+);base64/);
+  const extension = mimeMatch ? mimeMatch[1] : "png";
+  const filename = `${uuidv4()}.${extension}`;
+  const buffer = Buffer.from(base64Image, "base64");
+  await storage.putObject(filename, buffer);
+  return filename;
+}
+
 const togetherHandler: BackendHandler = {
   processRequest: async (id:string, userId:string, model: string, params: GenerateImageParams) => {
     const maxSteps = params.model === "Flux.1-Schnell" ? 4 : 50;
@@ -63,14 +73,7 @@ const falHandler: BackendHandler = {
     const maxSteps = params.model === "Flux.1-Schnell" ? 4 : 50;
     const steps = Math.min(params.steps || maxSteps, maxSteps); // Ensure steps don't exceed max
     const { width, height } = aspectRatioMap[params.aspectRatio ?? '4:3']
-    let image_url = params.refImage
-    if (image_url && image_url.startsWith('data:image')){
-      const base64Image = image_url.split(",")[1];
-      const image_path = `${uuidv4()}.png`;
-      const buffer = Buffer.from(base64Image, "base64");
-      await storage.putObject(image_path, buffer);
-      image_url = await storage.getUrl(image_path);
-    }
+    
     const body = {
       prompt: params.prompt || '',
       image_size: { width, height },
@@ -80,10 +83,15 @@ const falHandler: BackendHandler = {
       seed: Number(params.seed),
       output_format: 'jpeg', //'png'
       num_images: 1,
-      image_url: image_url ?? undefined,
-      image_prompt_strength: (params.prompt && image_url) ? (params.creativity - 1) / 9 : undefined,
+      image_url: params.refImage ?? undefined,
+      image_prompt_strength: (params.prompt && params.refImage) ? (params.creativity - 1) / 9 : undefined,
     };
 
+    if (body.image_url && !body.image_url.startsWith('http')){
+      // export a bucket url for fal
+      body.image_url = await storage.getUrl(body.image_url);
+    }
+    
     const headers =  { Authorization: `Key ${process.env.FAL_API_KEY}`, 'Content-Type': 'application/json' }
     const webHookParams = new URLSearchParams({ id:id, sessionId:userId}).toString()
     const webHookUrl = `${process.env.BASE_URL}/api/ai/callback/fal?${webHookParams}`
@@ -110,20 +118,13 @@ const modalHandler: BackendHandler = {
     const steps = Math.min(params.steps || maxSteps, maxSteps); // Ensure steps don't exceed max
     const { width, height } = aspectRatioMap[params.aspectRatio ?? '4:3']
     const url = `${process.env.BACKEND_URL}`.replace(/--(.*?)\.modal\.run/, `--${model}-web-predict.modal.run`);
-    let image_url = params.refImage
-    if (image_url && image_url.startsWith('data:image')){
-      const base64Image = image_url.split(",")[1];
-      image_url = `${uuidv4()}.png`;
-      const buffer = Buffer.from(base64Image, "base64");
-      await storage.putObject(image_url, buffer);
-    }
     
     // Construct the payload for the backend
     const body = {
       prompt: params.prompt,
       num_inference_steps: steps,
-      image_path: image_url, // Reference image path (if any)
-      prompt_strength: (params.prompt && image_url)
+      image_path: params.refImage, // Reference image path (if any)
+      prompt_strength: (params.prompt && params.refImage)
         ? (params.creativity - 1) / 9
         : undefined,
       seed: Number(params.seed),
@@ -180,7 +181,7 @@ function routeModel(params: GenerateImageParams): { handler: BackendHandler; mod
       modelName = 'black-forest-labs/FLUX.1-dev'
       if (refImage){
         handler = falHandler;
-        modelName = 'fal-dev/image-to-image'
+        modelName = 'fal-ai/flux/dev/image-to-image'
       }
       break;
     case 'Flux.1-Pro':
@@ -210,6 +211,11 @@ export async function POST(request: Request) {
     const { handler, modelName } = routeModel(params);
     const newId = uuidv4();
     const userId = session.user.id
+    
+    if (params.refImage && params.refImage.startsWith("data:image")) {
+      params.refImage = await processBase64Image(params.refImage)
+    }
+    
     // call appropriate model backend
     const result = await handler.processRequest(newId, userId, modelName, params);
     // Store in database

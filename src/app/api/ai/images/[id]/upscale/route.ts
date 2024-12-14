@@ -23,7 +23,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     
         const newId = uuidv4()
         const body = { image_path: `s3://${originalImage!.url}` }
-        const headers= { Authorization: `Bearer ${process.env.PERPLEXITY_API_KEY!}`, 'Content-Type': 'application/json'}
+        const headers= { 'Content-Type': 'application/json'}
         const webHookParams = new URLSearchParams({ id:newId, sessionId:originalImage!.userId}).toString()
         const webHookUrl = `${process.env.BASE_URL}/api/ai/callback/modal?${webHookParams}`
         const response = await qstash.publishJSON({url, body, headers,

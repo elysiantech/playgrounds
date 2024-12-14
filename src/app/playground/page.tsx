@@ -258,14 +258,14 @@ function Playground() {
 
       // Update newImages with the generated URLs
       newImage.id = upscaledImage.id;
-      newImage.url = `${upscaledImage.url}`;
+      newImage.url = upscaledImage.url || imageUrl;
       newImage.metadata = upscaledImage.metadata
 
       // Update the placeholder with the generated images
       setGeneratedImages((prev) => {
         return prev.map((image) =>
           image.id === newImage.id
-            ? { ...image, url: newImage.url || image.url, metadata: newImage.metadata }
+            ? { ...image, url: newImage.url, metadata: newImage.metadata }
             : image
         );
       });
