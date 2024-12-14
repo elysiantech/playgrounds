@@ -53,7 +53,7 @@ export default async function ImagePage({ params }: MetadataProps ) {
     if (!image) return notFound();
     const imageData:ImageData = {
         id: image.id,
-        url: image.url,
+        url: image.url!,
         prompt: image.prompt,
         model: image.model,
         creativity: image.creativity,
