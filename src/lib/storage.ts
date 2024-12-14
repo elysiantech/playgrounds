@@ -1,5 +1,6 @@
 import { S3Client, GetObjectCommand, GetObjectCommandOutput, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3"
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { v4 as uuidv4 } from 'uuid';
 import { Readable } from "stream";
 
 const MIME_TYPE: { [key: string]: string } = {
@@ -131,6 +132,16 @@ switch (process.env.STORAGE_PROVIDER) {
     break;
   default:
     throw new Error("Invalid STORAGE_PROVIDER specified in environment variables");
+}
+
+export async function processBase64Image(content: string): Promise<string> {
+  const [mimePart, base64Image] = content.split(",");
+  const mimeMatch = mimePart.match(/data:image\/([a-zA-Z]+);base64/);
+  const extension = mimeMatch ? mimeMatch[1] : "png";
+  const filename = `${uuidv4()}.${extension}`;
+  const buffer = Buffer.from(base64Image, "base64");
+  await storageProvider.putObject(filename, buffer);
+  return filename;
 }
 
 export default storageProvider;

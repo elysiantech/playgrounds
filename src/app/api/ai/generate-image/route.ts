@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import storage from '@/lib/storage'
+import storage, {processBase64Image} from '@/lib/storage'
 import { v4 as uuidv4 } from 'uuid';
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth"
@@ -13,16 +13,6 @@ interface BackendHandler {
 const aspectRatioMap = Object.fromEntries(
   aspectRatios.map((ar) => [ar.ratio, { width: ar.width, height: ar.height }])
 );
-
-export async function processBase64Image(content: string): Promise<string> {
-  const [mimePart, base64Image] = content.split(",");
-  const mimeMatch = mimePart.match(/data:image\/([a-zA-Z]+);base64/);
-  const extension = mimeMatch ? mimeMatch[1] : "png";
-  const filename = `${uuidv4()}.${extension}`;
-  const buffer = Buffer.from(base64Image, "base64");
-  await storage.putObject(filename, buffer);
-  return filename;
-}
 
 const togetherHandler: BackendHandler = {
   processRequest: async (id:string, userId:string, model: string, params: GenerateImageParams) => {
@@ -61,9 +51,10 @@ const togetherHandler: BackendHandler = {
       throw new Error(`Failed to generate image`)
 
     // Upload to bucket
-    const image_path = `${uuidv4()}.png`;
-    const buffer = Buffer.from(base64Image, "base64");
-    await storage.putObject(image_path, buffer);
+    const image_path = await processBase64Image(`data:image/png;base64,${base64Image}`);
+    // image_path = `${uuidv4()}.png`;
+    // const buffer = Buffer.from(base64Image, "base64");
+    // await storage.putObject(image_path, buffer);
     return { image_path: image_path }
   }
 }
