@@ -1,4 +1,5 @@
 import { S3Client, GetObjectCommand, GetObjectCommandOutput, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3"
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { Readable } from "stream";
 
 const MIME_TYPE: { [key: string]: string } = {
@@ -18,6 +19,7 @@ export interface StorageProvider {
   getObject: (key: string) => Promise<{ stream: Readable; contentType: string }>;
   putObject: (key: string, content: Buffer | string) => Promise<void>;
   deleteObject: (key: string) => Promise<void>;
+  getUrl: (key: string) => Promise<string>;
 }
 
 
@@ -68,6 +70,11 @@ class S3StorageProvider implements StorageProvider {
       const command = new DeleteObjectCommand({ Bucket: this.bucketName, Key: key });
       await this.client.send(command);
   }
+  async getUrl(key: string) {
+    const command = new GetObjectCommand({ Bucket: this.bucketName, Key: key });
+    return await getSignedUrl(this.client, command, { expiresIn: 3600 }); // URL valid for 1 hour
+    // return `https://${this.bucketName}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+  }
 }
 
 class VercelBlobStorageProvider implements StorageProvider {
@@ -105,6 +112,10 @@ class VercelBlobStorageProvider implements StorageProvider {
       method: "DELETE",
       headers: { Authorization: `Bearer ${this.authToken}` },
     });
+  }
+
+  async getUrl(key: string) {
+    return `https://api.vercel.com/v1/blob/${key}`;
   }
 }
 

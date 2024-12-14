@@ -25,10 +25,12 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     
     const image = await prisma.image.findUnique({ where: { id },});
 
-    if (!image || !image.url) {
+    if (!image) {
       return NextResponse.json({ error: "Image not found" }, { status: 404 });
     }
-    await storage.deleteObject(image.url);
+    if (image.url){
+      await storage.deleteObject(image.url);
+    }
     // Delete the record from the database
     await prisma.image.delete({where: { id },});
 

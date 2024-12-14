@@ -152,7 +152,7 @@ function Playground() {
       const updatedImages = newImages.map((image, index) => ({
         ...image,
         id: generatedImages[index].id,
-        url: `${generatedImages[index].url}`,
+        url: generatedImages[index].url || image.url,
         metadata: generatedImages[index].metadata
       }));
 
@@ -265,7 +265,7 @@ function Playground() {
       setGeneratedImages((prev) => {
         return prev.map((image) =>
           image.id === newImage.id
-            ? { ...image, url: `${newImage.url}`, metadata: newImage.metadata }
+            ? { ...image, url: newImage.url || image.url, metadata: newImage.metadata }
             : image
         );
       });
