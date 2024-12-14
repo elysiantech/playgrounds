@@ -52,3 +52,9 @@ export const aspectRatios: AspectRatio[] = [
   { ratio: "21:9", label: "Ultrawide (Cinematic/Monitor)", width: 1536, height: 640 },
   { ratio: "9:16", label: "Portrait (Mobile)", width: 736, height: 1344 },
 ];
+
+export const imageModels = {
+  "Flux.1-Schnell":"Flux.1-Schnell",
+  "Flux.1-dev":"Flux.1-dev",
+  "Flux.1-Pro":"Flux.1-Pro"
+}

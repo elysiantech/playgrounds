@@ -23,7 +23,7 @@ import {
 import { Card, CardContent } from '@/components/ui/card'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useApi } from "@/hooks/use-api"
-import { GenerateImageParams, aspectRatios } from '@/lib/types';
+import { GenerateImageParams, aspectRatios, imageModels } from '@/lib/types';
 
 
 interface SidebarProps {
@@ -353,9 +353,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ params, onGenerate, isOpen = t
                   <SelectValue placeholder="Select a model" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Flux.1-Schnell">Flux.1-Schnell</SelectItem>
-                  <SelectItem value="Flux.1-dev">Flux.1-dev</SelectItem>
-                  <SelectItem value="Flux.1-Redux">Flux.1-Redux</SelectItem>
+                  {Object.values(imageModels).map((value) => (
+                    <SelectItem key={value} value={value}>
+                      {value}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
