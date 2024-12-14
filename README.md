@@ -15,6 +15,7 @@ Playgrounds is an interactive application that enables users to generate, manage
 2. Install dependencies:
    ```bash
    npm install
+   brew install ngrok
    ```
 
 3. Set up environment variables in a `.env` file:
@@ -23,7 +24,9 @@ Playgrounds is an interactive application that enables users to generate, manage
    NEXTAUTH_SECRET=your-nextauth-secret
    GOOGLE_CLIENT_ID=your-google-client-id
    GOOGLE_CLIENT_SECRET=your-google-client-secret
+   NGROK_DOMAIN=
    ```
+   requires ngrok account to get static domain, for debugging webhooks
 
 4. Run the development server:
    ```bash

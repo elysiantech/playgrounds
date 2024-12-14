@@ -9,7 +9,7 @@ export const POST = verifySignatureAppRouter(async (req: NextRequest) =>{
     const id  = searchParams.get('id');
     const sessionId  = searchParams.get('sessionId');
     const body = await req.json(); 
-
+    
     const messageId = body?.sourceMessageId
     const buffer = Buffer.from(body.body, "base64").toString()
     const result = JSON.parse(buffer);
@@ -17,6 +17,8 @@ export const POST = verifySignatureAppRouter(async (req: NextRequest) =>{
     if (!messageId || !result.image_path) {
         return NextResponse.json({ message: 'Invalid payload' })
     }
+    // const status = body?.status
+    // const source  = searchParams.get('source');
 
     const upscaledImageUrl = result.image_path
     const newImage = await prisma.image.update({

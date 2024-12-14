@@ -156,12 +156,13 @@ export function useApi() {
       const images:[] = await response.json();
       images.forEach((image) => {
           const { id, url, prompt, model, creativity, steps, seed, refImage, metadata, bookmark, createdAt} = image
-          generatedImages.push({
-            id, url, prompt, model, creativity, steps, seed, metadata, bookmark,
-            numberOfImages:1,
-            refImage: refImage?? undefined,
-            createdAt:createdAt?? undefined,
-          })
+          if (url)
+            generatedImages.push({
+              id, url, prompt, model, creativity, steps, seed, metadata, bookmark,
+              numberOfImages:1,
+              refImage: refImage?? undefined,
+              createdAt:createdAt?? undefined,
+            })
         }
       )
       return generatedImages;

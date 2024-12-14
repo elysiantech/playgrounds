@@ -56,7 +56,7 @@ model VerificationToken {
 
 model Image {
   id         String   @id @default(uuid())
-  url        String
+  url        String?
   metadata   Json
   prompt     String
   model      String

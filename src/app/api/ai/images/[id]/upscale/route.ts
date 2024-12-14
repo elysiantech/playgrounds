@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import { publishWebhookEvent } from "@/lib/qstash";
-import { generatePlaceholderImage } from "@/lib/utils"
+import { qstash } from "@/lib/qstash";
 import { v4 as uuidv4 } from 'uuid';
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -26,8 +25,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         const body = { image_path: `s3://${originalImage!.url}` }
         const headers= { Authorization: `Bearer ${process.env.PERPLEXITY_API_KEY!}`, 'Content-Type': 'application/json'}
         const webHookParams = new URLSearchParams({ id:newId, sessionId:originalImage!.userId}).toString()
-        const response = await publishWebhookEvent(url, body, headers, webHookParams);
-        const upscaledImageUrl = generatePlaceholderImage('Upscaling...', '', 512,512 )
+        const webHookUrl = `${process.env.BASE_URL}/api/ai/callback/modal?${webHookParams}`
+        const response = await qstash.publishJSON({url, body, headers,
+                retries: 1,
+                callback: webHookUrl,
+                failureCallback: webHookUrl,
+        });
         if (!response.messageId) {
             throw new Error('Backend request failed');
         }
@@ -46,7 +49,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         const newImage = await prisma.image.create({
             data: {
                 id: newId,
-                url: upscaledImageUrl,
+                url: undefined,
                 metadata: {
                     originalImage: originalImage.url,
                     resolution: `x${factor}`,
