@@ -95,8 +95,10 @@ export const AIExpandModal: React.FC<AIExpandProps> = ({ image, isOpen, onClose,
     const handleGenerate = () => {
         if (!canvasRef.current || !imageRef.current) return;
     
-        const canvasWidth = naturalDimensions.width;
-        const canvasHeight = naturalDimensions.height;
+        const canvas = canvasRef.current;
+        const canvasRect = canvas.getBoundingClientRect();
+        const canvasWidth = canvasRect.width;
+        const canvasHeight = canvasRect.height;
     
         // 1. Create an offscreen canvas
         const offscreenCanvas = document.createElement('canvas');
