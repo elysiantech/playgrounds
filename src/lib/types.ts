@@ -58,3 +58,14 @@ export const imageModels = {
   "Flux.1-dev":"Flux.1-dev",
   "Flux.1-Pro":"Flux.1-Pro"
 }
+
+export const StyleToPromptMap = {
+  none: '',
+  photorealistic: ', photorealistic, highly detailed, 8k, sharp focus, perfect lighting, high quality, professional',
+  'comic-book': 'comic book, bold outlines, flat colors, action lines',
+  'neon-punk': ', cyberpunk, neon lights, high contrast, futuristic',
+  isometric: 'isometric projection, 3D geometric style',
+  'line-art': 'line art, black and white, clean lines, minimalist',
+  'pixel-art': 'pixel art, pixel illustration, pixel drawing, pixel graphic novel, pixel superhero',
+  '3d-model': '3d model, realistic textures, studio lighting',
+}

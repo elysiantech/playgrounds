@@ -15,6 +15,7 @@ import { generatePlaceholderImage, processWithConcurrencyLimit } from '@/lib/uti
 import { aspectRatios } from '@/lib/types';
 import { pusherClient } from "@/lib/pusher-client";
 import { ImageNavigation } from "@/components/ImageNavigation"
+import { AIExpandModal } from "@/components/AIExpand"
 
 export default function PlaygroundPage() {
   return (
@@ -32,13 +33,14 @@ function Playground() {
   const [selectedImage, setSelectedImage] = React.useState<ImageData | null>(null)
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false)
   const [canBookmark, setCanBookmark] = React.useState(false);
-  const { data:session, status} = useSession()
+  const [isExpandModalOpen, setIsExpandModalOpen] = React.useState(false)
+  const { data: session, status } = useSession()
   const { generateImage, getImages, updateImage, deleteImage, upscaleImage } = useApi()
-  
+
   const aspectRatioMap = Object.fromEntries(
     aspectRatios.map((ar) => [ar.ratio, { width: ar.width, height: ar.height }])
   );
-  
+
   React.useEffect(() => {
     const savedTheme = localStorage.getItem('theme')
     if (savedTheme) {
@@ -51,7 +53,7 @@ function Playground() {
       setGeneratedImages(parsedImages)
     })
   }, []);
-  
+
   React.useEffect(() => {
     if (!session) return;
     if (status !== 'authenticated') return
@@ -59,57 +61,57 @@ function Playground() {
     setCanBookmark(session.user?.role === "ADMIN");
 
     const sessionId = session.user?.id;
-    
+
     pusherClient
       .subscribe(sessionId)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .bind('imageUpdated', (updateImage:any) => {
+      .bind('imageUpdated', (updateImage: any) => {
         setGeneratedImages((prev) => {
           const updatedImages = prev.map((image) =>
             image.id === updateImage.id
               ? { ...image, url: `${updateImage.url}`, metadata: updateImage.metadata }
               : image
           );
-    
+
           // If the selected image matches the updated one, update it
           const matchingImage = updatedImages.find((image) => image.id === updateImage.id);
           if (matchingImage && selectedImage?.id === updateImage.id) {
-            setSelectedImage({...matchingImage});
+            setSelectedImage({ ...matchingImage });
           }
-    
+
           return updatedImages;
         });
       });
-      
+
     return () => pusherClient.unsubscribe(sessionId);
-  },[session, status, selectedImage]);
+  }, [session, status, selectedImage]);
 
   React.useEffect(() => {
-    if (searchParams.get('id')){
+    if (searchParams.get('id')) {
       const id = searchParams.get('id');
       fetch(`/api/public/images/${id}`)
-      .then(response => response.json())
-      .then(imageParams => {
-        const params: GenerateImageParams = {
-          prompt: imageParams.prompt || undefined,
-          creativity: imageParams.creativity,
-          steps: imageParams.steps,
-          seed: imageParams.seed,
-          model: imageParams.model,
-          numberOfImages: 1,
-          aspectRatio: imageParams.aspectRatio,
-          refImage: imageParams.refImage || undefined,
-          style: imageParams.style || undefined,
-          pose: imageParams.pose || undefined,
-          composition: imageParams.composition || undefined,
-        };
-        setGenerateParams((prev) => ({...prev, ...params}));
-      });            
-    } 
+        .then(response => response.json())
+        .then(imageParams => {
+          const params: GenerateImageParams = {
+            prompt: imageParams.prompt || undefined,
+            creativity: imageParams.creativity,
+            steps: imageParams.steps,
+            seed: imageParams.seed,
+            model: imageParams.model,
+            numberOfImages: 1,
+            aspectRatio: imageParams.aspectRatio,
+            refImage: imageParams.refImage || undefined,
+            style: imageParams.style || undefined,
+            pose: imageParams.pose || undefined,
+            composition: imageParams.composition || undefined,
+          };
+          setGenerateParams((prev) => ({ ...prev, ...params }));
+        });
+    }
   }, [searchParams])
 
-  const handleGenerateImage = async (params:GenerateImageParams) => {
-    const { width, height } = aspectRatioMap[ params.aspectRatio?? '4:3']
+  const handleGenerateImage = async (params: GenerateImageParams) => {
+    const { width, height } = aspectRatioMap[params.aspectRatio ?? '4:3']
     const imageUrl = generatePlaceholderImage('Generating...', 'almost there', width, height)
     const newImages: ImageData[] = Array.from({ length: params.numberOfImages }, () => {
       const uniqueSeed = params.seed === 'random' ? Math.floor(Math.random() * 2 ** 32) : parseInt(params.seed);
@@ -189,7 +191,7 @@ function Playground() {
             pose: selectedImage.pose || undefined,
             composition: selectedImage.composition || undefined,
           };
-          
+
           setGenerateParams((prev) => ({
             ...prev,
             ...params,
@@ -203,7 +205,7 @@ function Playground() {
         break;
       case 'download':
         if (selectedImage) {
-          handleDownload() 
+          handleDownload()
         }
       case 'bookmark':
         if (selectedImage) {
@@ -229,8 +231,12 @@ function Playground() {
           }
         }
         break;
-      case 'upscale':
       case 'aiExpand':
+        if (process.env.NODE_ENV !== 'production' && selectedImage) {
+          setIsExpandModalOpen(true)
+        }
+        break;
+      case 'upscale':
         if (process.env.NODE_ENV !== 'production' && selectedImage) {
           await handleUpscaleImage(selectedImage)
         }
@@ -241,13 +247,13 @@ function Playground() {
   }
 
   const handleUpscaleImage = async (image: ImageData) => {
-    const { width, height } = aspectRatioMap[ image.aspectRatio?? '4:3']
+    const { width, height } = aspectRatioMap[image.aspectRatio ?? '4:3']
     const imageUrl = generatePlaceholderImage('Upscaling...', '', width, height)
     const newImage: ImageData = {
       ...image,
       id: undefined,
       url: imageUrl,
-      };
+    };
 
     try {
       // Temporarily set placeholder images
@@ -269,7 +275,7 @@ function Playground() {
             : image
         );
       });
-      setSelectedImage({...newImage});
+      setSelectedImage({ ...newImage });
 
     } catch (error) {
       console.error('Error generating image:', error)
@@ -282,6 +288,28 @@ function Playground() {
         variant: "destructive",
       })
     }
+  }
+
+  const handleExpand = async (aspectRatio:string, refImage: string, maskImage: string) => {
+    if (!selectedImage) return;
+    const params: GenerateImageParams = {
+      prompt: selectedImage.prompt,
+      creativity: selectedImage.creativity,
+      steps: selectedImage.steps,
+      seed: selectedImage.seed,
+      model: selectedImage.model,
+      numberOfImages: 1,
+      aspectRatio: aspectRatio,
+      refImage: maskImage, //refImage
+      style: selectedImage.style || undefined,
+      pose: selectedImage.pose || undefined,
+      composition: maskImage,
+    };
+
+    setGenerateParams((prev) => ({
+      ...prev,
+      ...params,
+    }));
   }
 
   const handleDeleteImage = async (imageToDelete: ImageData) => {
@@ -346,27 +374,28 @@ function Playground() {
       <div className="h-full w-full md:w-64 md:flex-shrink-0 overflow-y-auto bg-sidebar">
         <Sidebar isOpen={isSidebarOpen} params={generateParams!} onGenerate={handleGenerateImage} />
       </div>
-      
+
       {/* Main content area */}
       <div className="flex-1 flex flex-col w-full md:w-auto">
         <Header toggleSidebar={toggleSidebar} />
         {/* Main content */}
         <main className="flex-1 flex flex-col overflow-hidden">
           <div className="relative w-full h-full">
-  
-          {/* Selected image area */}
-          <GeneratedImage 
-            selectedImage={selectedImage!}
-            onAction={handleImageAction} 
-            canBookmark={canBookmark} 
-          />
-          { selectedImage ? (
-                  <ImageNavigation  images={generatedImages} selectedImage={selectedImage} setSelectedImage={setSelectedImage} />)
-                  :(null)}
+
+            {/* Selected image area */}
+            <GeneratedImage
+              selectedImage={selectedImage!}
+              onAction={handleImageAction}
+              canBookmark={canBookmark}
+            />
+            {selectedImage ? (
+              <ImageNavigation images={generatedImages} selectedImage={selectedImage} setSelectedImage={setSelectedImage} />)
+              : (null)}
           </div>
           {/* Generated images row */}
           <ImageGallery generatedImages={generatedImages} onImageSelect={setSelectedImage} />
         </main>
+        {selectedImage && isExpandModalOpen && (<AIExpandModal isOpen={isExpandModalOpen} onClose={() => setIsExpandModalOpen(false)} image={selectedImage!} onGenerate={handleExpand} />)}
       </div>
     </div>
   )
