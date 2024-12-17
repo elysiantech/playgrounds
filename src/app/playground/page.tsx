@@ -11,7 +11,7 @@ import { Sidebar } from '@/components/Sidebar';
 import { GeneratedImage } from '@/components/GeneratedImage'
 import { ImageGallery } from '@/components/ImageGallery'
 import { useSession } from 'next-auth/react'
-import { generatePlaceholderImage, processWithConcurrencyLimit } from '@/lib/utils'
+import { generatePlaceholderImage } from '@/lib/utils'
 import { aspectRatios } from '@/lib/types';
 import { pusherClient } from "@/lib/pusher-client";
 import { ImageNavigation } from "@/components/ImageNavigation"
@@ -134,9 +134,10 @@ function Playground() {
       setSelectedImage(newImages[0]);
 
       // Generate images using the useApi hook
-      let generatedImages;
-      if (params.maskImage && params.refImage){
-        generatedImages = await Promise.all(newImages.map((image) => fillImage({
+      const imageFunction = params.maskImage && params.refImage ? fillImage : generateImage;
+      const generatedImages = await Promise.all(
+        newImages.map((image) =>
+          imageFunction({
             prompt: image.prompt,
             model: image.model,
             creativity: image.creativity,
@@ -147,23 +148,8 @@ function Playground() {
             maskImage: image.maskImage || undefined,
             numberOfImages: 1
           })
-        ) )
-      } else {
-        generatedImages = await processWithConcurrencyLimit(
-          newImages,
-          2, // max 2 concurrently lower costs
-          (image) => generateImage({
-            prompt: image.prompt,
-            model: image.model,
-            creativity: image.creativity,
-            steps: image.steps,
-            seed: image.seed,
-            aspectRatio: image.aspectRatio,
-            refImage: image.refImage || undefined,
-            numberOfImages: 1
-          })
-        );
-      }
+        ) 
+      )
       
       // Update newImages with the generated URLs
       const updatedImages = newImages.map((image, index) => ({
