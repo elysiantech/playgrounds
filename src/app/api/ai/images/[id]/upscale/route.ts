@@ -16,10 +16,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         if (!originalImage) {
             return NextResponse.json({ error: "Image not found" }, { status: 404 });
         }
-        const url =`${process.env.BACKEND_URL}`.replace(
-            /--(.*?)\.modal\.run/, 
-            `--stable-diffusion-realesrganupscaler-web-predict.modal.run`
-        );    
+        const model = 'realesrgan-x4'
+        const url = `${process.env.BACKEND_URL}`.replace(/--(.*?)\.modal\.run/, `--${model}.modal.run`);
     
         const newId = uuidv4()
         const body = { image_path: `s3://${originalImage!.url}` }
@@ -34,17 +32,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         if (!response.messageId) {
             throw new Error('Backend request failed');
         }
-        // const response = await fetch(url, {
-        //         method: 'POST',
-        //         body: JSON.stringify(body),
-        //         headers,
-        //     });
-        // if (!response.ok) {
-        //     throw new Error('Backend request failed');
-        // }
-        // const result = await response.json();
-        // const upscaledImageUrl = result.image_path
-    
+        
         // Create a new image record in the database
         const newImage = await prisma.image.create({
             data: {

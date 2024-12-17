@@ -35,7 +35,7 @@ function Playground() {
   const [canBookmark, setCanBookmark] = React.useState(false);
   const [isExpandModalOpen, setIsExpandModalOpen] = React.useState(false)
   const { data: session, status } = useSession()
-  const { generateImage, getImages, updateImage, deleteImage, upscaleImage } = useApi()
+  const { generateImage, getImages, updateImage, deleteImage, upscaleImage, fillImage } = useApi()
 
   const aspectRatioMap = Object.fromEntries(
     aspectRatios.map((ar) => [ar.ratio, { width: ar.width, height: ar.height }])
@@ -101,9 +101,7 @@ function Playground() {
             numberOfImages: 1,
             aspectRatio: imageParams.aspectRatio,
             refImage: imageParams.refImage || undefined,
-            style: imageParams.style || undefined,
-            pose: imageParams.pose || undefined,
-            composition: imageParams.composition || undefined,
+            maskImage: imageParams.style || undefined,
           };
           setGenerateParams((prev) => ({ ...prev, ...params }));
         });
@@ -126,6 +124,7 @@ function Playground() {
         metadata: {},
         aspectRatio: params.aspectRatio,
         refImage: params.refImage,
+        maskImage: params.maskImage,
       };
     });
 
@@ -135,21 +134,37 @@ function Playground() {
       setSelectedImage(newImages[0]);
 
       // Generate images using the useApi hook
-      const generatedImages = await processWithConcurrencyLimit(
-        newImages,
-        2, // max 2 concurrently lower costs
-        (image) => generateImage({
-          prompt: image.prompt,
-          model: image.model,
-          creativity: image.creativity,
-          steps: image.steps,
-          seed: image.seed,
-          aspectRatio: image.aspectRatio,
-          refImage: image.refImage || undefined,
-          numberOfImages: 1
-        })
-      );
-
+      let generatedImages;
+      if (params.maskImage && params.refImage){
+        generatedImages = await Promise.all(newImages.map((image) => fillImage({
+            prompt: image.prompt,
+            model: image.model,
+            creativity: image.creativity,
+            steps: image.steps,
+            seed: image.seed,
+            aspectRatio: image.aspectRatio,
+            refImage: image.refImage || undefined,
+            maskImage: image.maskImage || undefined,
+            numberOfImages: 1
+          })
+        ) )
+      } else {
+        generatedImages = await processWithConcurrencyLimit(
+          newImages,
+          2, // max 2 concurrently lower costs
+          (image) => generateImage({
+            prompt: image.prompt,
+            model: image.model,
+            creativity: image.creativity,
+            steps: image.steps,
+            seed: image.seed,
+            aspectRatio: image.aspectRatio,
+            refImage: image.refImage || undefined,
+            numberOfImages: 1
+          })
+        );
+      }
+      
       // Update newImages with the generated URLs
       const updatedImages = newImages.map((image, index) => ({
         ...image,
@@ -187,9 +202,7 @@ function Playground() {
             numberOfImages: 1,
             aspectRatio: selectedImage.aspectRatio || '4:3',
             refImage: selectedImage.refImage || undefined,
-            style: selectedImage.style || undefined,
-            pose: selectedImage.pose || undefined,
-            composition: selectedImage.composition || undefined,
+            maskImage: selectedImage.maskImage || undefined,
           };
 
           setGenerateParams((prev) => ({
@@ -300,10 +313,8 @@ function Playground() {
       model: selectedImage.model,
       numberOfImages: 1,
       aspectRatio: aspectRatio,
-      refImage: maskImage, //refImage
-      style: selectedImage.style || undefined,
-      pose: selectedImage.pose || undefined,
-      composition: maskImage,
+      refImage: refImage,
+      maskImage: maskImage,
     };
 
     setGenerateParams((prev) => ({

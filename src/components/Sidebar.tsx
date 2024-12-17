@@ -41,6 +41,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ params, onGenerate, isOpen = t
   const [numberOfImages, setNumberOfImages] = React.useState(1)
   const [model, setModel] = React.useState('Flux.1-Schnell')
   const [refImage, setRefImage] = React.useState<string | null>(null)
+  const [maskImage, setMaskImage] = React.useState<string | null>(null)
   const [aspectRatio, setAspectRatio] = React.useState('4:3');
   const [isProcessing, setIsProcessing] = React.useState(false);
   const { enhancePrompt, promptFromImage } = useApi()
@@ -58,6 +59,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ params, onGenerate, isOpen = t
       setNumberOfImages(params.numberOfImages)
       setAspectRatio(params.aspectRatio!)
       setRefImage(params.refImage!)
+      setMaskImage(params.maskImage!)
     }
   }, [params])
 
@@ -67,10 +69,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ params, onGenerate, isOpen = t
       aspectRatio,
       creativity,
       numberOfImages,
-      seed,
+      seed: seed === 'fixed' ? fixedSeed: seed,
       model,
       steps,
       refImage: refImage!,
+      maskImage: maskImage!,
     }
     onGenerate(params)
   }

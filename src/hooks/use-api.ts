@@ -15,186 +15,107 @@ export function useApi() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const enhancePrompt = async (prompt: string): Promise<string> => {
+  // Base function to handle fetch requests
+  const baseFetch = async <T>(
+    url: string,
+    method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
+    body?: object | FormData,
+    headers: Record<string, string> = {}
+  ): Promise<T> => {
     setIsLoading(true);
     setError(null);
+  
     try {
-      const response = await fetch('/api/ai/enhance-prompt', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ prompt }),
+      const isFormData = body instanceof FormData;
+      const response = await fetch(url, {
+        method,
+        headers: isFormData ? undefined : { 'Content-Type': 'application/json', ...headers },
+        body: body ? (isFormData ? body : JSON.stringify(body)) : undefined,
       });
-
+  
       if (!response.ok) {
-        throw new Error('Failed to enhance prompt');
+        throw new Error(`Request failed with status ${response.status}`);
       }
-
-      const data = await response.json();
-      return data.enhancedPrompt;
-    } catch (error) {
-      setError('Failed to enhance prompt');
-      throw error;
+  
+      return (await response.json()) as T;
+    } catch (err) {
+      setError((err as Error).message || 'Request failed');
+      throw err;
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const enhancePrompt = async (prompt: string): Promise<string> => {
+    const data = await baseFetch<{ enhancedPrompt: string }>('/api/ai/enhance-prompt', 'POST', { prompt });
+    return data.enhancedPrompt;
   };
 
   const generateImage = async (params: GenerateImageParams): Promise<GeneratedImage> => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await fetch('/api/ai/generate-image', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(params),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to generate image');
-      }
-
-      const data = await response.json();
-      return { url: data.url, id: data.id, metadata: data.metadata, bookmark:data.bookmark };
-    } catch (error) {
-      setError('Failed to generate image');
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
+    return baseFetch<GeneratedImage>('/api/ai/generate-image', 'POST', params);
   };
 
   const upscaleImage = async (id: string): Promise<GeneratedImage> => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await fetch(`/api/ai/images/${id}/upscale`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ factor:8 }),
-      });
-  
-      if (!response.ok) {
-        throw new Error('Failed to upscale image');
-      }
-  
-      const newImage = await response.json();
-      return newImage;
-    } catch (error) {
-      setError('Failed to upscale image');
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
+    return baseFetch<GeneratedImage>(`/api/ai/images/${id}/upscale`, 'POST', { factor: 8 });
+  };
+
+  const fillImage = async (params: GenerateImageParams): Promise<GeneratedImage> => {
+    return baseFetch<GeneratedImage>('/api/ai/fill-image', 'POST', params);
   };
 
   const deleteImage = async (id: string): Promise<void> => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await fetch(`/api/images/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete image');
-      }
-    } catch (error) {
-      setError('Failed to delete image');
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
+    await baseFetch<void>(`/api/images/${id}`, 'DELETE');
   };
 
   const updateImage = async (id: string, updates: Partial<GeneratedImage>): Promise<GeneratedImage> => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      const response = await fetch(`/api/images/${id}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updates),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update image');
-      }
-
-      const updatedImage = await response.json();
-      return updatedImage;
-    } catch (error) {
-      setError('Failed to update image');
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
+    return baseFetch<GeneratedImage>(`/api/images/${id}`, 'PATCH', updates);
   };
 
-  const getImages = async (isPublic: boolean=false, offset?: number, limit?: number): Promise<ImageData[]> => {
-    setIsLoading(true);
-    setError(null);
+  const getImages = async (
+    isPublic: boolean = false,
+    offset?: number,
+    limit?: number
+  ): Promise<ImageData[]> => {
+    const query = new URLSearchParams();
+    if (offset) query.set('offset', offset.toString());
+    if (limit) query.set('limit', limit.toString());
   
-    try {
-      // Determine the API route based on whether the request is public
-      const apiRoute = isPublic
-        ? `/api/public/images?${new URLSearchParams({ ...(offset && { offset: offset.toString() }), ...(limit && { limit: limit.toString() }) })}`
-        : `/api/images`;
+    const apiRoute = isPublic
+      ? `/api/public/images?${query.toString()}`
+      : `/api/images`;
   
-      const response = await fetch(apiRoute);
-  
-      if (!response.ok) {
-        throw new Error('Failed to fetch images');
-      }
-  
-      const generatedImages:ImageData[] = []
-      const images:[] = await response.json();
-      images.forEach((image) => {
-          const { id, url, prompt, model, creativity, steps, seed, refImage, metadata, bookmark, createdAt} = image
-          if (url)
-            generatedImages.push({
-              id, url, prompt, model, creativity, steps, seed, metadata, bookmark,
-              numberOfImages:1,
-              refImage: refImage?? undefined,
-              createdAt:createdAt?? undefined,
-            })
-        }
-      )
-      return generatedImages;
-    } catch (error) {
-      setError('Failed to fetch images');
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const promptFromImage = async (file:File) => {
-    if (file.size > 10 * 1024*1024){
-      alert("File size exceeds maximum allowed 10MB");
-      return;
-    }
+    // Fetch images using baseFetch
+    const images = await baseFetch<ImageData[]>(apiRoute, 'GET');
     
+    // Process and map image data
+    return images
+      .filter((image) => image.url)
+      .map((image) => ({
+        id: image.id,
+        url: image.url,
+        prompt: image.prompt,
+        model: image.model,
+        creativity: image.creativity,
+        steps: image.steps,
+        seed: image.seed,
+        refImage: image.refImage ?? undefined,
+        metadata: image.metadata,
+        bookmark: image.bookmark,
+        numberOfImages: 1,
+        createdAt: image.createdAt ?? undefined,
+      }));
+  };
+
+  const promptFromImage = async (file: File): Promise<string> => {
+    if (file.size > 10 * 1024 * 1024) {
+      alert("File size exceeds the maximum allowed size of 10MB");
+      return Promise.reject("File size too large");
+    }
     const formData = new FormData();
     formData.append('file', file);
-    
-    const response = await fetch('/api/ai/analyze-image', {
-      method: 'POST',
-      body: formData,
-    });
-  
-    if (!response.ok) {
-      throw new Error('Failed to generate prompt from image');
-    }
-  
-    const data = await response.json();
+    const data = await baseFetch<{ prompt: string }>('/api/ai/analyze-image', 'POST', formData);  
     return data.prompt;
-  }
+  };
 
   return {
     enhancePrompt,
@@ -204,6 +125,7 @@ export function useApi() {
     deleteImage,
     upscaleImage,
     getImages,
+    fillImage,
     isLoading,
     error,
   };

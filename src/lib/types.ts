@@ -13,9 +13,7 @@ export interface ImageData {
   metadata: Record<string, string | number>;
   model: string
   createdAt?: Date
-  style?: string
-  pose?: string
-  composition?: string
+  maskImage?: string
 }
 
 export interface Generation {
@@ -32,9 +30,7 @@ export interface GenerateImageParams {
   numberOfImages: number;
   aspectRatio?:string;
   refImage?: string; 
-  style?: string
-  pose?: string
-  composition?: string
+  maskImage?: string;
 }
 
 interface AspectRatio {
