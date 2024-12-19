@@ -23,7 +23,7 @@ import {
 import { Card, CardContent } from '@/components/ui/card'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { useApi } from "@/hooks/use-api"
-import { GenerateImageParams, aspectRatios, imageModels } from '@/lib/types';
+import { GenerateImageParams, aspectRatios, imageModelMap as imageModels } from '@/lib/types';
 
 
 interface SidebarProps {

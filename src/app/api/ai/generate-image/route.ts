@@ -1,240 +1,198 @@
+import { auth } from "@/lib/auth"
 import { NextResponse } from 'next/server';
+import { GenerateImageParams, aspectRatios } from '@/lib/types';
 import storage from '@/lib/storage'
-import {processBase64Image} from '@/lib/storage'
+import { getLocalUrl , getRemoteUrl} from '@/lib/storage'
 import { v4 as uuidv4 } from 'uuid';
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth"
-import { GenerateImageParams, aspectRatios } from '@/lib/types';
 import { qstash } from "@/lib/qstash";
 
-interface BackendHandler {
-  processRequest(id:string, userId:string, model: string, params: GenerateImageParams): Promise<{ image_path: string | undefined }>;
-}
+type HandlerConfig = {
+  body: object;
+  url: string;
+  headers: Record<string, string>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  transformResponse?: (response: any) => any; 
+  webhookUrl?: string;
+};
 
-const aspectRatioMap = Object.fromEntries(
-  aspectRatios.map((ar) => [ar.ratio, { width: ar.width, height: ar.height }])
-);
+type HandlerType = 'together' | 'fal' | 'modal' | 'replicate'
 
-const togetherHandler: BackendHandler = {
-  processRequest: async (id:string, userId:string, model: string, params: GenerateImageParams) => {
-    const maxSteps = params.model === "Flux.1-Schnell" ? 4 : 50;
-    const steps = Math.min(params.steps || maxSteps, maxSteps); // Ensure steps don't exceed max
-    const { width, height } = aspectRatioMap[params.aspectRatio ?? '4:3']
+const buildHandlerConfig = async (
+    handler: HandlerType,
+    id: string,
+    userId: string,
+    model: string,
+    params: GenerateImageParams
+  ): Promise<HandlerConfig> => {
+    const aspectRatioMap = Object.fromEntries( aspectRatios.map((ar) => [ar.ratio, { width: ar.width, height: ar.height }]));
+    const { width, height } = aspectRatioMap[params.aspectRatio ?? '4:3'];
+    const steps = Math.min(params.steps || 50, params.model === "Flux.1-Schnell" ? 4 : 50);
+    const promptStrength = params.prompt && params.refImage ? (params.creativity - 1) / 9 : undefined
+    const refImageUrl = await getRemoteUrl(params.refImage);
+    const maskImageUrl = await getRemoteUrl(params.maskImage);
 
-    const body = {
-      model,
+    const baseBody = {
       prompt: params.prompt || '',
-      width,
-      height,
-      steps: steps,
-      seed: Number(params.seed),
-      n: 1, // Number of images to generate
-      response_format: 'b64_json', // Request base64 response
-    };
-
-    const url = `https://api.together.xyz/v1/images/generations`;
-    const headers = { Authorization: `Bearer ${process.env.TOGETHER_API_KEY}`, 'Content-Type': 'application/json'}
-    const response = await fetch(url, {
-      method: 'POST',
-      headers, 
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      const errorDetails = await response.text();
-      console.log(errorDetails)
-      throw new Error(`Failed to generate image - ${errorDetails}`)
-    }
-
-    const result = await response.json();
-    const base64Image = result.data[0]?.b64_json; // Extract base64 image data
-    if (!base64Image)
-      throw new Error(`Failed to generate image`)
-
-    // Upload to bucket
-    const image_path = await processBase64Image(`data:image/png;base64,${base64Image}`);
-    // image_path = `${uuidv4()}.png`;
-    // const buffer = Buffer.from(base64Image, "base64");
-    // await storage.putObject(image_path, buffer);
-    return { image_path: image_path }
-  }
-}
-
-const falHandler: BackendHandler = {
-  processRequest: async (id:string, userId:string, model: string, params: GenerateImageParams) => {
-    const maxSteps = params.model === "Flux.1-Schnell" ? 4 : 50;
-    const steps = Math.min(params.steps || maxSteps, maxSteps); // Ensure steps don't exceed max
-    const { width, height } = aspectRatioMap[params.aspectRatio ?? '4:3']
-    
-    const body = {
-      prompt: params.prompt || '',
-      image_size: { width, height },
-      sync_mode: true,
-      num_inference_steps: steps,
-      enable_safety_checker: true,
-      seed: Number(params.seed),
-      output_format: 'jpeg', //'png'
-      num_images: 1,
-      image_url: params.refImage ?? undefined,
-      image_prompt_strength: (params.prompt && params.refImage) ? (params.creativity - 1) / 9 : undefined,
-    };
-
-    if (body.image_url && !body.image_url.startsWith('http')){
-      // export a bucket url for fal
-      body.image_url = await storage.getUrl(body.image_url);
-    }
-    
-    const headers =  { Authorization: `Key ${process.env.FAL_API_KEY}`, 'Content-Type': 'application/json' }
-    const webHookParams = new URLSearchParams({ id:id, sessionId:userId}).toString()
-    const webHookUrl = `${process.env.BASE_URL}/api/ai/callback/fal?${webHookParams}`
-    const url = `https://queue.fal.run/${model}?fal_webhook=${encodeURIComponent(webHookUrl)}`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      const errorDetails = await response.text();
-      console.log(errorDetails)
-      throw new Error(`Failed to generate image - ${errorDetails}`)
-    }
-    return { image_path: undefined}
-  }
-}
-
-
-const modalHandler: BackendHandler = {
-  processRequest: async (id:string, userId:string, model: string, params: GenerateImageParams) => {
-    const maxSteps = params.model === "FluxSchnell" ? 4 : 50;
-    const steps = Math.min(params.steps || maxSteps, maxSteps); // Ensure steps don't exceed max
-    const { width, height } = aspectRatioMap[params.aspectRatio ?? '4:3']
-    const url = `${process.env.BACKEND_URL}`.replace(/--(.*?)\.modal\.run/, `--${model}-web-predict.modal.run`);
-    
-    // Construct the payload for the backend
-    const body = {
-      prompt: params.prompt,
-      num_inference_steps: steps,
-      image_path: params.refImage, // Reference image path (if any)
-      prompt_strength: (params.prompt && params.refImage)
-        ? (params.creativity - 1) / 9
-        : undefined,
       seed: Number(params.seed),
       width,
       height,
+      
     };
-
-    const headers = { 'Content-Type': 'application/json' };
-    const webHookParams = new URLSearchParams({ id:id, sessionId:userId, source:"modal"}).toString()
-    const webHookUrl = `${process.env.BASE_URL}/api/ai/callback/modal?${webHookParams}`
-    const response = await qstash.publishJSON({url, body, headers,
-            retries: 1,
-            callback: webHookUrl,
-            failureCallback: webHookUrl,
-    });
-    if (!response.messageId) {
-        throw new Error('Backend request failed');
-    }
-    return { image_path: undefined}
-    // Send a POST request to the backend
-    // const response = await fetch(url, {
-    //   method: 'POST',
-    //   headers,
-    //   body: JSON.stringify(body),
-    // });
-
-    // if (!response.ok) {
-    //   const errorDetails = await response.text();
-    //   console.log(errorDetails)
-    //   throw new Error(`Failed to generate image - ${errorDetails}`)
-    // }
-    // // Parse the backend response
-    // const result = await response.json();
-    // return { image_path: result.image_path }
-  }
-}
-
-function routeModel(params: GenerateImageParams): { handler: BackendHandler; modelName: string } {
-  const { model, refImage } = params;
-  let handler: BackendHandler;
-  let modelName: string;
   
-  switch (model) {
-    case 'Flux.1-Schnell':
-      handler = togetherHandler;
-      modelName = 'black-forest-labs/FLUX.1-schnell-Free';
-      if (refImage) {
-        handler = modalHandler; //togetherHandler
-        modelName = 'blackforestlabs-fluxschnell'; //'black-forest-labs/FLUX.1-redux'
+    switch (handler) {
+      case 'together':
+        return {
+          body: { ...baseBody, model, n: 1, steps, response_format: 'b64_json' },
+          url: `https://api.together.xyz/v1/images/generations`,
+          headers: { Authorization: `Bearer ${process.env.TOGETHER_API_KEY}`, 'Content-Type': 'application/json' },
+          transformResponse: async (response) => {
+            const base64Image = response.data[0]?.b64_json;
+            const url = await getLocalUrl(`data:image/png;base64,${base64Image}`);
+            return {  image_path:url, metadata: { id:response.id} }
+          }
+        };
+  
+      case 'fal': {
+        const webhookUrl = `${process.env.BASE_URL}/api/ai/callback/fal?id=${id}&sessionId=${userId}`;
+        return {
+          body: {
+            ...baseBody,
+            image_size: { width, height },
+            output_format: 'jpeg',
+            num_images: 1,
+            steps,
+            image_url: refImageUrl,
+            mask_url: maskImageUrl,
+            image_prompt_strength: promptStrength,
+          },
+          url: `https://queue.fal.run/${model}?fal_webhook=${encodeURIComponent(webhookUrl)}`,
+          headers: { Authorization: `Key ${process.env.FAL_API_KEY}`, 'Content-Type': 'application/json' },
+        };
       }
-      break;
-    case 'Flux.1-dev':
-      handler = togetherHandler;
-      modelName = 'black-forest-labs/FLUX.1-dev'
-      if (refImage){
-        handler = falHandler;
-        modelName = 'fal-ai/flux/dev/image-to-image'
+  
+      case 'modal': {
+        return {
+          body: {
+            ...baseBody,
+            num_inference_steps: steps,
+            image_path: refImageUrl,
+            prompt_strength: promptStrength,
+          },
+          url: process.env.BACKEND_URL!.replace(/--(.*?)\.modal\.run/, `--${model}-web-predict.modal.run`),
+          headers: { 'Content-Type': 'application/json' },
+          transformResponse: undefined,
+          webhookUrl: `${process.env.BASE_URL}/api/ai/callback/modal?id=${id}&sessionId=${userId}&source=modal`,
+        };
       }
-      break;
-    case 'Flux.1-Pro':
-      handler = falHandler;
-      modelName = 'fal-ai/flux-pro';
-      if (refImage){
-        modelName = 'fal-ai/flux-pro/v1/redux'; //'fal-ai/flux-lora'
-      }
-      break;
-    default:
-      throw new Error(`Unsupported model type: ${model}`);
-  }
-  return { handler, modelName }
+
+      case 'replicate': {
+        return {
+            body:{
+                prompt:params.prompt!,
+                image:refImageUrl,
+                mask:maskImageUrl,
+                steps,
+                guidance:3,
+                output_format:'jpg',
+                safety_tolerance:2,
+                prompt_upsampling:false,
+            },
+            url:`https://api/replicate.com/v1/models/${model}/predictions`,
+            headers: { Authorization: `Bearer ${process.env.REPLICATE_API_TOKEN}`, 'Prefer':'wait', 'Content-Type': 'application/json' },
+            webhookUrl: `${process.env.BASE_URL}/api/ai/callback/modal?id=${id}&sessionId=${userId}`,
+            transformResponse: async (response) => {
+                const res = await fetch(response.output)
+                if (!res.ok) throw new Error(`Failed to fetch image from ${response.output}`);
+                const url = `${uuidv4()}.jpg`
+                await storage.putObject(url, Buffer.from( await res.arrayBuffer() ))
+                return { image_path:url, metadata:{ id: response.id } }
+            }
+        };
+    }
+      default:
+        throw new Error(`Unsupported handler type: ${handler}`);
+    }
+  };
+
+function routeModel(params: GenerateImageParams): {handler:HandlerType, model: string } {
+    const isImageToImage = params.refImage? true:false;
+    const taskType = isImageToImage ? 'imageToImage' : 'textToImage';
+    const modelMap: Record<string, { textToImage: undefined | { handler: HandlerType; model: string }; imageToImage: undefined | { handler: HandlerType; model: string };}> = {
+      'Flux.1-Schnell': {
+        textToImage: { handler: 'together', model: 'black-forest-labs/FLUX.1-schnell-Free' },
+        imageToImage: { handler: 'modal', model: 'blackforestlabs-fluxschnell' },
+      },
+      'Flux.1-dev': {
+        textToImage: { handler: 'together', model: 'black-forest-labs/FLUX.1-dev' },
+        imageToImage: { handler: 'fal', model: 'fal-ai/flux/dev/image-to-image' },
+      },
+      'Flux.1-Pro': {
+        textToImage: { handler: 'fal', model: 'fal-ai/flux-pro' },
+        imageToImage: { handler: 'fal', model: 'fal-ai/flux-pro/v1/redux' },
+      },
+      'Recraft 20B': {
+        textToImage: { handler: 'fal', model: 'fal-ai/recraft-20b' },
+        imageToImage: undefined,
+      },
+      'Nvidia Sana': {
+        textToImage: { handler: 'fal', model: 'fal-ai/sana' },
+        imageToImage: undefined,
+      },
+    };
+    const modelConfig = modelMap[params.model]?.[taskType];
+    if (modelConfig) return modelConfig;  
+
+    throw new Error(`Unsupported model type: ${params.model}`);
 }
 
 export async function POST(request: Request) {
-  // Get the user's session
-  const session = await auth();
-  if (!session || !session.user || !session.user.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  try {
-    // Parse request parameters
-    const params: GenerateImageParams = await request.json();
-    
-    const { handler, modelName } = routeModel(params);
-    const newId = uuidv4();
-    const userId = session.user.id
-    
-    if (params.refImage && params.refImage.startsWith("data:image")) {
-      params.refImage = await processBase64Image(params.refImage)
-    }
-    
-    // call appropriate model backend
-    const result = await handler.processRequest(newId, userId, modelName, params);
-    // Store in database
-    const newImage = await prisma.image.create({
-      data: {
-        id: newId,
-        url: result.image_path!,
-        metadata: {},
-        userId: session.user.id,
-        prompt: params.prompt || '',
-        model: params.model,
-        creativity: params.creativity,
-        steps: params.steps,
-        aspectRatio: params.aspectRatio,
-        seed: String(params.seed),
-        refImage: params.refImage,
-      },
-    });
-
-    // Return new Image
-    return NextResponse.json(newImage);
-  } catch (error) {
-    console.error('Error starting task:', error);
-    return NextResponse.json(
-      { error: `Failed to generate image - ${error}` },
-      { status: 500 }
+    // Get the user's session
+    const session = await auth();
+    if (!session || !session.user || !session.user.id) 
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  
+    try {
+      // Parse request parameters
+        const id = uuidv4();
+        const userId = session.user.id  
+        const params: GenerateImageParams = await request.json();
+        params.refImage = await getLocalUrl(params.refImage) // uploads to storage
+        params.maskImage = await getLocalUrl(params.maskImage) // uploads to storage
+        const { handler, model } = routeModel(params);
+        const {url, body, headers, webhookUrl:callback, transformResponse} = await buildHandlerConfig(handler, id, userId, model, params)
+        let content;
+        if (callback){
+            const response = await qstash.publishJSON({url, body, headers, callback, retries:1, failureCallback:callback})
+            if (!response.messageId) throw new Error('Publish request failed');
+            content = response;
+        } else { 
+            const response = await fetch(url, { method: 'POST', headers: headers, body: JSON.stringify(body),});
+            if (!response.ok)throw new Error(`Request failed - ${await response.text()}`);
+            content = await response.json()
+        }
+        const results = (transformResponse)? await transformResponse(content) : { image_path: undefined, metadata: {}}
+        
+        const newImage = await prisma.image.create({
+            data: {
+                id,
+                userId,
+                url: results.image_path!,
+                metadata: {handler, ...results.metadata},        
+                prompt: params.prompt || '',
+                model: params.model,
+                creativity: params.creativity,
+                steps: params.steps,
+                aspectRatio: params.aspectRatio,
+                seed: String(params.seed),
+                refImage: params.refImage,
+                //maskImage: params.maskImage,
+            },
+        });
+        // Return new Image
+        return NextResponse.json(newImage);
+    } catch (error) {
+        return NextResponse.json({ error: `Failed to generate image - ${error}` }, { status: 500 }
     );
   }
-
 }

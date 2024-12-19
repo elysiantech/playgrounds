@@ -16,6 +16,10 @@ export interface ImageData {
   maskImage?: string
 }
 
+export interface VideoData extends ImageData {
+  duration?: number;
+};
+
 export interface Generation {
   images: ImageData[],
   createdAt: Date
@@ -31,6 +35,10 @@ export interface GenerateImageParams {
   aspectRatio?:string;
   refImage?: string; 
   maskImage?: string;
+}
+
+export interface GenerateVideoParams extends GenerateImageParams {
+  duration?: number;
 }
 
 interface AspectRatio {
@@ -49,10 +57,13 @@ export const aspectRatios: AspectRatio[] = [
   { ratio: "9:16", label: "Portrait (Mobile)", width: 736, height: 1344 },
 ];
 
-export const imageModels = {
-  "Flux.1-Schnell":"Flux.1-Schnell",
-  "Flux.1-dev":"Flux.1-dev",
-  "Flux.1-Pro":"Flux.1-Pro"
+type ModelType = 'Flux.1-Schnell' | 'Flux.1-dev' | 'Flux.1-Pro' | 'Recraft 20B' | 'Nvidia Sana';
+export const imageModelMap: Record<ModelType, string> = {
+  "Flux.1-Schnell": "Flux.1-Schnell",
+  "Flux.1-dev": "Flux.1-dev",
+  "Flux.1-Pro": "Flux.1-Pro",
+  "Recraft 20B": "Recraft 20B",
+  "Nvidia Sana": "Nvidia Sana",
 }
 
 export const StyleToPromptMap = {

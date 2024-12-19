@@ -5,17 +5,37 @@ import { v4 as uuidv4 } from 'uuid';
 
 
 const MIME_TYPE: { [key: string]: string } = {
+  // Images
   '.gif': 'image/gif',
+  '.jpeg': 'image/jpeg',
+  '.jpg': 'image/jpeg',
+  '.png': 'image/png',
+  '.svg': 'image/svg+xml',
+  '.webp': 'image/webp',
+  // Videos
+  '.mp4': 'video/mp4',
+  '.webm': 'video/webm',
+  '.avi': 'video/x-msvideo',
+  '.mov': 'video/quicktime',
+  '.mkv': 'video/x-matroska',
+  // Text
   '.htm': 'text/html',
   '.html': 'text/html',
   '.php': 'text/plain',
-  '.jpeg': 'image/jpeg',
-  '.jpg': 'image/jpeg',
   '.json': 'application/json',
-  '.png': 'image/png',
-  '.svg': 'image/svg+xml',
-  '.zip': 'application/zip'
+  // Archives
+  '.zip': 'application/zip',
 };
+
+// Reverse-map MIME types to extensions
+const EXTENSIONS: { [key: string]: string } = Object.entries(MIME_TYPE).reduce(
+  (acc, [ext, mime]) => {
+    acc[mime] = ext.replace('.', ''); // Remove the leading dot for extensions
+    return acc;
+  },
+  {} as { [key: string]: string }
+);
+
 
 export interface StorageProvider {
   getObject: (key: string) => Promise<{ stream: Readable; contentType: string }>;
@@ -141,8 +161,9 @@ export default storage;
 
 export async function processBase64Image(content: string): Promise<string> {
   const [mimePart, base64Image] = content.split(",");
-  const mimeMatch = mimePart.match(/data:image\/([a-zA-Z]+);base64/);
-  const extension = mimeMatch ? mimeMatch[1] : "png";
+  const mimeMatch = mimePart.match(/data:([a-zA-Z\/]+);base64/);
+  const mimeType = mimeMatch ? mimeMatch[1] : "image/png";
+  const extension = Object.keys(MIME_TYPE).find((ext) => MIME_TYPE[ext] === mimeType) || ".png";
   const filename = `${uuidv4()}.${extension}`;
   const buffer = Buffer.from(base64Image, "base64");
   await storage.putObject(filename, buffer);
@@ -154,7 +175,11 @@ export const getLocalUrl = async (param?: string): Promise<string | undefined> =
     if (param.startsWith('http')) {
         const res = await fetch(param)
         if (!res.ok) return undefined;
-        const url = `${uuidv4()}.jpg`
+        const contentType = res.headers.get('Content-Type');
+        if (!contentType) return undefined;
+        const extension = EXTENSIONS[contentType];
+        if (!extension) return undefined;
+        const url = `${uuidv4()}.${extension}`;
         await storage.putObject(url, Buffer.from( await res.arrayBuffer() ))
         return url;
     } else if (param.startsWith('data:image')){
