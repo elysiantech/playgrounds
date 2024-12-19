@@ -1,7 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server'
 import prisma from "@/lib/prisma";
 import pusher from '@/lib/pusher';
-import { getLocalUrl } from '@/lib/utils'
+import { getLocalUrl } from '@/lib/storage'
 
 
 export const POST = async (req: NextRequest) => {

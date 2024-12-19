@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import storage from '@/lib/storage'
-import {processBase64Image} from '@/lib/utils'
+import {processBase64Image} from '@/lib/storage'
 import { v4 as uuidv4 } from 'uuid';
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth"

@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth"
 import { GenerateImageParams } from '@/lib/types';
-import { getLocalUrl , getRemoteUrl} from '@/lib/utils'
+import { getLocalUrl , getRemoteUrl} from '@/lib/storage'
 
   
 export async function POST(request: Request) {
