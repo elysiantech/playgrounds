@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
-import storage, {processBase64Image} from '@/lib/storage'
 import { v4 as uuidv4 } from 'uuid';
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth"
 import { GenerateImageParams } from '@/lib/types';
+import { getLocalUrl , getRemoteUrl} from '@/lib/utils'
+
   
 export async function POST(request: Request) {
   // Get the user's session
@@ -17,13 +18,8 @@ export async function POST(request: Request) {
     const params: GenerateImageParams = await request.json();
     if (!params.refImage || !params.maskImage)
         return NextResponse.json({ error: "Need ref and mask image" }, { status: 401 });
-        
-    if (params.refImage.startsWith("data:image"))
-      params.refImage = await processBase64Image(params.refImage)
-    
-    if (params.maskImage.startsWith("data:image")) 
-        params.maskImage = await processBase64Image(params.maskImage)
-
+    params.refImage = await getLocalUrl(params.refImage)
+    params.maskImage = await getLocalUrl(params.maskImage)
     
     const id = uuidv4();
     const userId = session.user.id
@@ -34,8 +30,8 @@ export async function POST(request: Request) {
     
     const body = {
       prompt: params.prompt || '',
-      image_url:  params.refImage.startsWith('http')? params.refImage : await storage.getUrl(params.refImage),
-      mask_url: params.maskImage.startsWith('http')? params.maskImage : await storage.getUrl(params.maskImage),
+      image_url:  await getRemoteUrl(params.refImage),
+      mask_url: await getRemoteUrl(params.maskImage),
       sync_mode: true,
       num_inference_steps: steps,
       enable_safety_checker: true,
