@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import storage, {processBase64Image} from '@/lib/storage'
+import storage from '@/lib/storage'
+import {processBase64Image} from '@/lib/utils'
 import { v4 as uuidv4 } from 'uuid';
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth"
@@ -213,7 +214,7 @@ export async function POST(request: Request) {
     const newImage = await prisma.image.create({
       data: {
         id: newId,
-        url: result.image_path,
+        url: result.image_path!,
         metadata: {},
         userId: session.user.id,
         prompt: params.prompt || '',

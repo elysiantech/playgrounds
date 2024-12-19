@@ -1,5 +1,7 @@
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
+import storage from '@/lib/storage'
+import { v4 as uuidv4 } from 'uuid';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -74,3 +76,36 @@ export function generatePlaceholderImage(
     `;
     return `data:image/svg+xml,${encodeURIComponent(svg)}`;
 }
+
+
+export async function processBase64Image(content: string): Promise<string> {
+  const [mimePart, base64Image] = content.split(",");
+  const mimeMatch = mimePart.match(/data:image\/([a-zA-Z]+);base64/);
+  const extension = mimeMatch ? mimeMatch[1] : "png";
+  const filename = `${uuidv4()}.${extension}`;
+  const buffer = Buffer.from(base64Image, "base64");
+  await storage.putObject(filename, buffer);
+  return filename;
+}
+
+export const getLocalUrl = async (param?: string): Promise<string | undefined> => {
+    if (!param) return undefined;
+    if (param.startsWith('http')) {
+        const res = await fetch(param)
+        if (!res.ok) return undefined;
+        const url = `${uuidv4()}.jpg`
+        await storage.putObject(url, Buffer.from( await res.arrayBuffer() ))
+        return url;
+    } else if (param.startsWith('data:image')){
+        return  await processBase64Image(param)
+    } else return param;
+};
+
+export const getRemoteUrl = async (param?: string): Promise<string | undefined> => {
+    if (!param) return undefined;
+    if (param.startsWith('http')) return param;
+    return param.startsWith('data:image')
+      ? storage.getUrl(await processBase64Image(param))
+      : storage.getUrl(param);
+};
+

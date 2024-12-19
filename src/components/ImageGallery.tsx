@@ -1,5 +1,6 @@
 import React from 'react'
 import Image from 'next/image'
+import { useInView } from 'react-intersection-observer';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
 import { ImageData } from '@/lib/types';
 
@@ -12,6 +13,11 @@ interface ImageGalleryProps {
   export const ImageGallery: React.FC<ImageGalleryProps> = ({ generatedImages, onImageSelect, direction = 'horizontal' }) => {
     const isHorizontal = direction === 'horizontal';
     const gallerySize = isHorizontal ? 128: 240; 
+    const [ref, inView] = useInView({
+      triggerOnce: true,
+      rootMargin: '200px 0px',
+    });
+    
     const customLoader = ({ src, width, quality }: { src: string; width: number; quality?: number }) => {
       return `${src}?width=${width}&quality=${quality || 75}`;
     };
@@ -32,21 +38,23 @@ interface ImageGalleryProps {
             
           >
             {generatedImages.map((image, index) => (
-              <div key={index} className="relative group flex-shrink-0">
-                <Image
-                  loader={customLoader}
-                  src={image.url.startsWith('data:image') ? image.url : `/share/${image.url}`}
-                  alt={`Generated image ${index + 1}`}
-                  width={gallerySize}
-                  height={gallerySize}
-                  className="rounded-md cursor-pointer hover:opacity-80 transition-opacity"
-                  onClick={() => onImageSelect(image)}
-                  style={{
-                    height: isHorizontal ? `${gallerySize}px`:'auto',
-                    width: isHorizontal ? 'auto' : `${gallerySize}px`,
-                  }}
-                />
-              </div>
+                <div ref = {ref}key={index} className="relative group flex-shrink-0">
+                  {inView && (
+                    <Image
+                      loader={customLoader}
+                      src={image.url.startsWith('data:image') ? image.url : `/share/${image.url}`}
+                      alt={`Generated image ${index + 1}`}
+                      width={gallerySize}
+                      height={gallerySize}
+                      className="rounded-md cursor-pointer hover:opacity-80 transition-opacity"
+                      onClick={() => onImageSelect(image)}
+                      style={{
+                        height: isHorizontal ? `${gallerySize}px`:'auto',
+                        width: isHorizontal ? 'auto' : `${gallerySize}px`,
+                      }}
+                    />
+                  )}
+                </div>
             ))}
           </div>
           <ScrollBar orientation={isHorizontal ? 'horizontal' : 'vertical'} />
