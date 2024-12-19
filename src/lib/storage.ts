@@ -130,7 +130,7 @@ switch (process.env.STORAGE_PROVIDER) {
     storageProvider = new VercelBlobStorageProvider();
     break;
   default:
-    throw new Error("Invalid STORAGE_PROVIDER specified in environment variables");
+    throw new Error(`Invalid STORAGE_PROVIDER ${process.env.STORAGE_PROVIDER} specified in environment variables`);
 }
 
 export default storageProvider;
