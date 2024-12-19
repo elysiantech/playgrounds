@@ -14,10 +14,7 @@ interface MasonryGridProps {
 export const MasonryGrid: React.FC<MasonryGridProps> = ({ selectedImage }) => {
   const [images, setImages] = useState<ImageData[]>([]);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-  const [offset, setOffset] = useState(0);
-  const [isFetching, setIsFetching] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-
+  
   const { getImages } = useApi();
 
   const breakpointColumns = {
@@ -27,42 +24,26 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({ selectedImage }) => {
     500: 1,
   };
 
-  const fetchMoreImages = async () => {
-    if (isFetching || !hasMore) return;
-
-    setIsFetching(true);
-
-    try {
-      const limit = 20; // Define how many images to fetch per batch
-      const newImages = await getImages(true, offset, limit);
-      const parsedImages = newImages.map((image) => { 
-        return { ...image, url: `/share/${image.url}`}
-      });
-      if (parsedImages.length > 0) {
-        setImages((prevImages) => [...prevImages, ...parsedImages]);
-        setOffset((prevOffset) => prevOffset + parsedImages.length);
-      } else {
-        setHasMore(false); // No more images to fetch
-      }
-    } catch (error) {
-      console.error('Error fetching images:', error);
-    } finally {
-      setIsFetching(false);
-    }
-  };
-
-  // Load initial images on component mount
+  // Fetch all images on component mount
   useEffect(() => {
-    fetchMoreImages();
+    const fetchImages = async () => {
+      try {
+        const allImages = await getImages(true); // Fetch all ImageData
+        const parsedImages = allImages.map((image) => ({
+          ...image,
+          url: `/share/${image.url}`, // Adjust URL if necessary
+        }));
+        setImages(parsedImages);
+      } catch (error) {
+        console.error('Error fetching images:', error);
+      }
+    };
+
+    fetchImages();
   }, []);
 
   return (
-    <div onScroll={(e) => {
-      const target = e.target as HTMLElement;
-      if (target.scrollHeight - target.scrollTop <= target.clientHeight * 1.5 && !isFetching) {
-        fetchMoreImages();
-      }
-    }} className="overflow-y-auto h-screen">
+    <div className="overflow-y-auto h-screen">
       <Masonry
         breakpointCols={breakpointColumns}
         className="flex w-auto -ml-4"
@@ -79,7 +60,6 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({ selectedImage }) => {
           />
         ))}
       </Masonry>
-      {isFetching && <p className="text-center my-4">Loading...</p>}
     </div>
   );
 };
@@ -95,11 +75,12 @@ interface LazyImageProps {
 const LazyImage: React.FC<LazyImageProps> = ({ image, index, hoveredIndex, setHoveredIndex, selectedImage }) => {
   const [ref, inView] = useInView({
     triggerOnce: true,
-    rootMargin: '200px 0px',
+    rootMargin: '200px 0px', // Preload slightly before entering the viewport
   });
-  const prompt = image.prompt.replace(/^["\s]+|["\s]+$/g, '')
-  const width = 500;//Math.floor(Math.random() * (800 - 200) + 200); 
-  const height = 500;//Math.floor(width * (Math.random() * 0.5 + 0.75)); 
+
+  const prompt = image.prompt.replace(/^["\s]+|["\s]+$/g, '');
+  const width = 500;
+  const height = 500;
   const customLoader = ({ src, width, quality }:{src:string, width:number, quality?:number}) => {
     return `${src}?width=${width}&quality=${quality || 75}`;
   };
@@ -115,7 +96,6 @@ const LazyImage: React.FC<LazyImageProps> = ({ image, index, hoveredIndex, setHo
       {inView && (
         <>
           <Image
-            // src={`${image.url}?width=${width}&quality=75`}
             loader={customLoader}
             src={image.url}
             alt={image.prompt}
@@ -136,4 +116,3 @@ const LazyImage: React.FC<LazyImageProps> = ({ image, index, hoveredIndex, setHo
     </div>
   );
 };
-

@@ -71,23 +71,13 @@ export function useApi() {
     return baseFetch<GeneratedImage>(`/api/images/${id}`, 'PATCH', updates);
   };
 
-  const getImages = async (
-    isPublic: boolean = false,
-    offset?: number,
-    limit?: number
-  ): Promise<ImageData[]> => {
+  const getImages = async ( isPublic: boolean = false, offset?: number, limit?: number): Promise<ImageData[]> => {
     const query = new URLSearchParams();
     if (offset) query.set('offset', offset.toString());
     if (limit) query.set('limit', limit.toString());
   
-    const apiRoute = isPublic
-      ? `/api/public/images?${query.toString()}`
-      : `/api/images`;
-  
-    // Fetch images using baseFetch
+    const apiRoute = isPublic ? `/api/public/images`: `/api/images`;
     const images = await baseFetch<ImageData[]>(apiRoute, 'GET');
-    
-    // Process and map image data
     return images
       .filter((image) => image.url)
       .map((image) => ({
