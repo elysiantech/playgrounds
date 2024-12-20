@@ -66,6 +66,13 @@ export const imageModelMap: Record<ModelType, string> = {
   "Nvidia Sana": "Nvidia Sana",
 }
 
+type VideoModelType = 'MiniMax' | 'Kling-1' | 'CogVideoX-5B' | 'Hapier-v2';
+export const videoModelMap: Record<VideoModelType, string> = {
+  'MiniMax': 'MiniMax',
+  'Kling-1': 'Kling-1',
+  'CogVideoX-5B': 'CogVideoX-5B',
+  'Hapier-v2': 'Hapier-v2'
+}
 export const StyleToPromptMap = {
   none: '',
   photorealistic: ', photorealistic, highly detailed, 8k, sharp focus, perfect lighting, high quality, professional',

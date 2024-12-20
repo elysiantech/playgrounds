@@ -1,8 +1,7 @@
 'use client'
 
 import { useState } from 'react';
-import { ImageData } from '@/lib/types';
-import { GenerateImageParams } from '@/lib/types';
+import { ImageData, GenerateImageParams, GenerateVideoParams } from '@/lib/types';
 
 interface GeneratedImage {
   id:string;
@@ -54,6 +53,9 @@ export function useApi() {
   const generateImage = async (params: GenerateImageParams): Promise<GeneratedImage> => {
     return baseFetch<GeneratedImage>('/api/ai/generate-image', 'POST', params);
   };
+  const generateVideo = async (params: GenerateVideoParams): Promise<GeneratedImage> => {
+    return baseFetch<GeneratedImage>('/api/ai/generate-video', 'POST', params);
+  };
 
   const upscaleImage = async (id: string): Promise<GeneratedImage> => {
     return baseFetch<GeneratedImage>(`/api/ai/images/${id}/upscale`, 'POST', { factor: 8 });
@@ -79,7 +81,7 @@ export function useApi() {
     const apiRoute = isPublic ? `/api/public/images`: `/api/images`;
     const images = await baseFetch<ImageData[]>(apiRoute, 'GET');
     return images
-      .filter((image) => image.url)
+      .filter((image) => image.url && !image.url.endsWith('.mp4'))
       .map((image) => ({
         id: image.id,
         url: image.url,
@@ -116,6 +118,7 @@ export function useApi() {
     upscaleImage,
     getImages,
     fillImage,
+    generateVideo,
     isLoading,
     error,
   };

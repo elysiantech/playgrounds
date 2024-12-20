@@ -35,7 +35,7 @@ const buildHandlerConfig = async (
           body: {
             prompt: params.prompt || '',
             seed: Number(params.seed),
-            aspect_ratio: params.model !== 'CogVideoX-5B' ? params.aspectRatio : undefined,  
+            //aspect_ratio: params.model !== 'CogVideoX-5B' ? params.aspectRatio : undefined,  
             image_url: refImageUrl,
             duration: params.duration,
           },
