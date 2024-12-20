@@ -77,7 +77,7 @@ const LazyImage: React.FC<LazyImageProps> = ({ image, index, hoveredIndex, setHo
     triggerOnce: true,
     rootMargin: '200px 0px', // Preload slightly before entering the viewport
   });
-
+  const preloadCount = 10; 
   const prompt = image.prompt.replace(/^["\s]+|["\s]+$/g, '');
   const width = 500;
   const height = 500;
@@ -93,7 +93,7 @@ const LazyImage: React.FC<LazyImageProps> = ({ image, index, hoveredIndex, setHo
       onMouseLeave={() => setHoveredIndex(null)}
       onClick={() => selectedImage(image)}
     >
-      {inView && (
+      {(inView || index < preloadCount)  && (
         <>
           <Image
             loader={customLoader}
