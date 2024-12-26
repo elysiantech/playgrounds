@@ -36,7 +36,7 @@ export const GeneratedImage: React.FC<GeneratedImageProps> = ({ selectedImage, o
               loader={customLoader}
               src={selectedImage.url.startsWith('data:image')? selectedImage.url: `/share/${selectedImage.url}`}
               alt="Generated image"
-              className="object-contain rounded-lg shadow-lg"
+              className="object-contain rounded-lg shadow-lg border"
               fill
               sizes="100vw"
               priority
