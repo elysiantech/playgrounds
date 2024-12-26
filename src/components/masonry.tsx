@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, forwardRef } from 'react'
 import Masonry from 'react-masonry-css';
 import { useInView } from 'react-intersection-observer';
 import { ImageData } from '@/lib/types'
@@ -11,7 +11,7 @@ interface MasonryGridProps {
   selectedImage: (image: ImageData) => void;
 }
 
-export const MasonryGrid: React.FC<MasonryGridProps> = ({ selectedImage }) => {
+export const MasonryGrid = forwardRef<HTMLElement, MasonryGridProps>(({ selectedImage }, ref) => {
   const [images, setImages] = useState<ImageData[]>([]);
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   
@@ -43,7 +43,7 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({ selectedImage }) => {
   }, []);
 
   return (
-    <div className="overflow-y-auto h-screen">
+    <section ref={ref} className="overflow-y-auto h-screen">
       <Masonry
         breakpointCols={breakpointColumns}
         className="flex w-auto -ml-4"
@@ -60,9 +60,9 @@ export const MasonryGrid: React.FC<MasonryGridProps> = ({ selectedImage }) => {
           />
         ))}
       </Masonry>
-    </div>
+    </section>
   );
-};
+});
 
 interface LazyImageProps {
   image: ImageData;
@@ -116,3 +116,4 @@ const LazyImage: React.FC<LazyImageProps> = ({ image, index, hoveredIndex, setHo
     </div>
   );
 };
+MasonryGrid.displayName = "MasonryGrid";
