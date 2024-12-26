@@ -7,10 +7,10 @@ import { SessionProvider } from "next-auth/react";
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Origam.ai - Free AI Image Generator | Create Stunning Visuals Instantly',
-  description: 'Transform your ideas into breathtaking visuals with Origam.ai. Leverage state-of-the-art AI models to generate high-quality images for free. Perfect for creators, designers, and dreamers.',
-  keywords: 'AI image generator, free image generator, create images online, AI art, image creation tool, Origam.ai, AI-powered visuals',
-}
+  title: 'Create Amazing Images and Videos with AI - Art Generator for Kids and School',
+  description: 'Empower kids and students to create AI-generated images and videos for school projects, t-shirts, social media, and more! Fun, easy-to-use, and perfect for young creators, educators, and families.',
+  keywords: 'AI art for kids, school project art generator, AI image generator for students, kid-friendly AI tools, AI video creator for kids, creative tools for schools, art creation platform for families',
+};
 
 export default function RootLayout({children,}: {children: React.ReactNode}) {
   return (
