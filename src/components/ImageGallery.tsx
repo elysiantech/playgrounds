@@ -18,7 +18,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ generatedImages, onI
 
   return (
     <div
-      className="relative border-t"
+      className="relative"
       style={{
         height: isHorizontal ? `${gallerySize}px` : 'auto',
         width: isHorizontal ? '100%' : `${gallerySize}px`,

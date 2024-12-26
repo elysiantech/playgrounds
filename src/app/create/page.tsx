@@ -1,13 +1,13 @@
 'use client'
 
-import React, { Suspense } from 'react'
+import React, { useState, useRef, Suspense } from 'react'
 import { useTheme } from 'next-themes'
 import { useSearchParams } from 'next/navigation'
 import { toast } from '@/hooks/use-toast'
 import { useApi } from "@/hooks/use-api"
 import { ImageData, GenerateImageParams } from '@/lib/types';
 import { Header } from '@/components/header';
-import { Sidebar } from '@/components/Sidebar';
+import FloatingToolbar from '@/components/FloatingToolbar'
 import { GeneratedImage } from '@/components/GeneratedImage'
 import { ImageGallery } from '@/components/ImageGallery'
 import { useSession } from 'next-auth/react'
@@ -17,29 +17,41 @@ import { pusherClient } from "@/lib/pusher-client";
 import { ImageNavigation } from "@/components/ImageNavigation"
 import { AIExpandModal } from "@/components/AIExpand"
 
-export default function PlaygroundPage() {
+export default function CreatePage() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <Playground />
+      <Create />
     </Suspense>
   );
 }
 
-function Playground() {
+function Create() {
   const { setTheme } = useTheme()
   const searchParams = useSearchParams()
   const [generateParams, setGenerateParams] = React.useState<GenerateImageParams | null>(null)
   const [generatedImages, setGeneratedImages] = React.useState<ImageData[]>([])
   const [selectedImage, setSelectedImage] = React.useState<ImageData | null>(null)
-  const [isSidebarOpen, setIsSidebarOpen] = React.useState(false)
+  const [isModalOpen, setIsModalOpen] = useState(false)
   const [canBookmark, setCanBookmark] = React.useState(false);
-  const [isExpandModalOpen, setIsExpandModalOpen] = React.useState(false)
+  const [isExpandModalOpen, setIsExpandModalOpen] = useState(false)
   const { data: session, status } = useSession()
-  const { generateImage, getImages, updateImage, deleteImage, upscaleImage, fillImage } = useApi()
-
+  const recentGenerationRef = useRef<HTMLDivElement | null>(null);
+  const { generateImage, getImages, updateImage, deleteImage, upscaleImage, fillImage, generateVideo } = useApi()
+  const [toolbarHeight, setToolbarHeight] = useState(0)
+  const toolbarRef = useRef<HTMLDivElement>(null)
+  const [headerHeight, setHeaderHeight] = useState(0)
+  const headerRef = useRef<HTMLDivElement>(null)
+  
   const aspectRatioMap = Object.fromEntries(
     aspectRatios.map((ar) => [ar.ratio, { width: ar.width, height: ar.height }])
   );
+
+
+  React.useEffect(() => {
+    if (toolbarRef.current) setToolbarHeight(toolbarRef.current.offsetHeight)
+    if (headerRef.current) setHeaderHeight(headerRef.current.offsetHeight)
+    
+  }, [])
 
   React.useEffect(() => {
     const savedTheme = localStorage.getItem('theme')
@@ -51,7 +63,13 @@ function Playground() {
         return { ...image, url: `${image.url}` }
       });
       setGeneratedImages(parsedImages)
-    })
+
+      setTimeout(() => {
+        if (recentGenerationRef.current) {
+          recentGenerationRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    });
   }, []);
 
   React.useEffect(() => {
@@ -134,7 +152,7 @@ function Playground() {
       setSelectedImage(newImages[0]);
 
       // Generate images using the useApi hook
-      const imageFunction = params.maskImage && params.refImage ? fillImage : generateImage;
+      const imageFunction = params.maskImage && params.refImage ? fillImage : generateImage; //generateVideo
       const generatedImages = await Promise.all(
         newImages.map((image) =>
           imageFunction({
@@ -270,7 +288,7 @@ function Playground() {
       setGeneratedImages((prev) => {
         return prev.map((image) =>
           image.id === newImage.id
-            ? { ...image, url: newImage.url, metadata: newImage.metadata }
+            ? { ...image, url: newImage.url || image.url, metadata: newImage.metadata }
             : image
         );
       });
@@ -361,39 +379,26 @@ function Playground() {
     }
   };
 
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen)
-  }
-
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-background">
-      {/* Sidebar */}
-      <div className="h-full w-full md:w-64 md:flex-shrink-0 overflow-y-auto bg-sidebar">
-        <Sidebar isOpen={isSidebarOpen} params={generateParams!} onGenerate={handleGenerateImage} />
+    <div className="min-h-screen flex flex-col">
+      <div ref={headerRef}>
+      <Header />
       </div>
-
-      {/* Main content area */}
-      <div className="flex-1 flex flex-col w-full md:w-auto">
-        <Header toggleSidebar={toggleSidebar} />
-        {/* Main content */}
-        <main className="flex-1 flex flex-col overflow-hidden">
-          <div className="relative w-full h-full">
-
-            {/* Selected image area */}
-            <GeneratedImage
-              selectedImage={selectedImage!}
-              onAction={handleImageAction}
-              canBookmark={canBookmark}
-            />
-            {selectedImage ? (
-              <ImageNavigation images={generatedImages} selectedImage={selectedImage} setSelectedImage={setSelectedImage} />)
-              : (null)}
-          </div>
-          {/* Generated images row */}
-          <ImageGallery generatedImages={generatedImages} onImageSelect={setSelectedImage} />
-        </main>
-        {selectedImage && isExpandModalOpen && (<AIExpandModal isOpen={isExpandModalOpen} onClose={() => setIsExpandModalOpen(false)} image={selectedImage!} onGenerate={handleExpand} />)}
+      <div className="flex-grow flex overflow-hidden" style={{ height: `calc(100vh - ${toolbarHeight + headerHeight}px)` }}>
+        <div className="flex-grow overflow-auto">
+          <GeneratedImage selectedImage={selectedImage!} onAction={handleImageAction} canBookmark={false} />
+          {selectedImage ? (
+            <ImageNavigation images={generatedImages} selectedImage={selectedImage} setSelectedImage={setSelectedImage} />)
+            : (null)}
+        </div>
+        <div className="mt-4 mb-4 border rounded-lg overflow-auto">
+          <ImageGallery generatedImages={generatedImages} onImageSelect={setSelectedImage} direction="vertical" />
+        </div>
       </div>
+      <div ref={toolbarRef}>
+        <FloatingToolbar params={generateParams!} onGenerate={handleGenerateImage} />
+      </div>
+      {selectedImage && isExpandModalOpen && (<AIExpandModal isOpen={isExpandModalOpen} onClose={() => setIsExpandModalOpen(false)} image={selectedImage!} onGenerate={() => { }} />)}
     </div>
   )
 }
