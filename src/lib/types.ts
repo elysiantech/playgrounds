@@ -14,6 +14,7 @@ export interface ImageData {
   model: string
   createdAt?: Date
   maskImage?: string
+  likes:number;
 }
 
 export interface VideoData extends ImageData {

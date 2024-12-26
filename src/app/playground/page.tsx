@@ -125,6 +125,7 @@ function Playground() {
         aspectRatio: params.aspectRatio,
         refImage: params.refImage,
         maskImage: params.maskImage,
+        likes: 0,
       };
     });
 

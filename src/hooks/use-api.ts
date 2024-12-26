@@ -94,6 +94,7 @@ export function useApi() {
         metadata: image.metadata,
         bookmark: image.bookmark,
         numberOfImages: 1,
+        likes: image.likes,
         createdAt: image.createdAt ?? undefined,
       }));
   };
