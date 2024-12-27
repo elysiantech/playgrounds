@@ -11,7 +11,7 @@ interface ImageGalleryProps {
 
 export const ImageGallery: React.FC<ImageGalleryProps> = ({ generatedImages, onImageSelect, direction = 'horizontal' }) => {
   const isHorizontal = direction === 'horizontal';
-  const gallerySize = isHorizontal ? 128 : 240;
+  const gallerySize = isHorizontal ? 128 : 200;
   const customLoader = ({ src, width, quality }: { src: string; width: number; quality?: number }) => {
     return `${src}?width=${width}&quality=${quality || 75}`;
   };

@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -6,9 +7,9 @@ import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import Image from 'next/image';
-import { Sun, Moon, LogOut, Menu } from 'lucide-react';
+import { Sun, Moon, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Logo } from '@/components/Logo'
 
 type HeaderProps = {
   transparent?: boolean;
@@ -20,62 +21,24 @@ export function Header({ toggleSidebar, transparent = false }: HeaderProps) {
   const { setTheme, theme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
-
   useEffect(() => {
     setMounted(true);
   }, []);
 
   return (
-    <header className={`h-16 flex items-center justify-between px-4 ${transparent ? 'fixed top-0 left-0 right-0 z-50 bg-transparent' : 'border-b'}`}>
-      {/* Mobile Header */}
-      <div className="md:hidden flex items-center space-x-4">
-        {toggleSidebar && (
-          <Button variant="ghost" size="icon" onClick={toggleSidebar}>
-            <Menu className={`h-6 w-6 ${transparent ? 'text-white' : ''}`} />
-          </Button>
-        )}
-        <Link href="/" className="flex items-center space-x-2">
-        <div className="w-8 h-8">
-        {mounted && (
-          <Image
-            src={theme === 'dark' ? '/logo-white-black.png' : '/logo-black-white.png'}
-            alt="Origam.ai Logo"
-            width={32}
-            height={32}
-            className="rounded-md"
-          />
-          )}
-        </div>
-        <h1 className={`text-xl font-light ${transparent ? 'text-white' : ''}`}>
-        Origam.ai
-        </h1>
-        </Link>
-      </div>
+    <header className={`h-10 flex items-center justify-between py-1 px-2 
+      ${transparent ? 'fixed top-0 left-0 right-0 z-50 bg-transparent' : ''}`}
+    >
+      {/* Left: Logo */}
+      <Link href="/">
+        {mounted && (<Logo theme={theme || 'light'} />)}
+      </Link>
 
-      {/* Desktop Header */}
-      <div className="hidden md:flex items-center space-x-4">
-      <Link href="/" className="flex items-center space-x-2">
-        <div className="w-8 h-8">
-        {mounted && (
-          <Image
-            src={theme === 'dark' ? '/logo-white-black.png' : '/logo-black-white.png'}
-            alt="Origam.ai Logo"
-            width={32}
-            height={32}
-            className="rounded-md"
-          />
-        )}
-        </div>
-        <h1 className={`text-xl font-light ${transparent ? 'text-white' : ''}`}>
-        Origam.ai
-        </h1>
-        </Link>
-      </div>
-
+      {/* Right: User Avatar */}
       {session?.user && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className={`relative h-8 w-8 rounded-full ${transparent ? 'absolute right-4 top-4' : ''}`}>
+            <Button variant="ghost" className="relative h-8 w-8 rounded-full">
               <Avatar className="h-8 w-8">
                 <AvatarImage src={session.user.image || ''} alt={session.user.name || ''} />
                 <AvatarFallback>{session.user.name?.charAt(0) || 'U'}</AvatarFallback>

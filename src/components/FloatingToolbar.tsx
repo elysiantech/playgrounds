@@ -48,17 +48,12 @@ const FloatingToolbar: React.FC<FloatingToolbarProps> = ({ params, onGenerate })
     setCreativity(params.creativity)
     setSteps(params.steps)
     setAspectRatio(params.aspectRatio!)
-
+    
     // Conditional handling for GenerateImageParams | GenerateVideoParams
     const isVideoParams = ('duration' in params);
-    if (mode === 'video' && isVideoParams) {
-      setLength(params.duration!);
-      setModel(params.model);
-    } else if (mode === 'image' && !isVideoParams) {
-      setModel(params.model);
-    }
-    
-    
+    if (isVideoParams) setLength(params.duration!);
+    setMode(isVideoParams?'video':'image')
+    setModel(params.model);
     if (params.seed !== 'random') {
       setSeed('fixed')
       setFixedSeed(params.seed)
@@ -384,15 +379,14 @@ const FloatingToolbar: React.FC<FloatingToolbarProps> = ({ params, onGenerate })
                       {mode === 'image' ? 'Reference' : '1st Frame'}
                     </Button>
                   ) : (
-                    <div className="relative flex items-center">
+                    <div className="relative w-24 h-9">
                       {/* Preview the uploaded image */}
-                      <Button variant="outline" className="flex items-center space-x-2" onClick={() => setRefImage(null)}>
+                      <Button variant="outline" className="relative w-full h-full p-0 overflow-hidden rounded-md" onClick={() => setRefImage(null)}>
                       <Image
                         src={refImage.startsWith('data:image') ? refImage : `/share/${refImage}`}
                         alt="Uploaded"
-                        width={25}
-                        height={25}
-                        className="rounded-md object-cover border border-gray-300 x-5 w-5"
+                        layout='fill'
+                        className="object-cover"
                       />
                       </Button>
                     </div>
@@ -403,7 +397,7 @@ const FloatingToolbar: React.FC<FloatingToolbarProps> = ({ params, onGenerate })
                 <p>
                   {mode === 'image'
                     ? 'Upload an image to guide style or composition'
-                    : 'Upload an image to define the first frame of your video'}
+                    : 'Define the first frame of your video'}
                 </p>
               </TooltipContent>
             </Tooltip>

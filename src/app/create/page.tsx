@@ -5,7 +5,7 @@ import { useTheme } from 'next-themes'
 import { useSearchParams } from 'next/navigation'
 import { toast } from '@/hooks/use-toast'
 import { useApi } from "@/hooks/use-api"
-import { ImageData, GenerateImageParams, VideoData, GenerateVideoParams } from '@/lib/types';
+import { ImageData, GenerateImageParams, VideoData, GenerateVideoParams, videoModelMap } from '@/lib/types';
 import { Header } from '@/components/header';
 import FloatingToolbar from '@/components/FloatingToolbar'
 import { GeneratedImage } from '@/components/GeneratedImage'
@@ -128,7 +128,7 @@ function Create() {
 
   const handleGenerateImage = async (params: GenerateImageParams | GenerateVideoParams) => {
     const { width, height } = aspectRatioMap[params.aspectRatio ?? '4:3']
-    const imageUrl = generatePlaceholderImage('Generating Magic...', 'almost there', width, height)
+    const imageUrl = generatePlaceholderImage('Generating Something Amazing', 'One moment, magic is happening…', width, height)
     const newImages: ImageData[] = Array.from({ length: params.numberOfImages }, () => {
       const uniqueSeed = params.seed === 'random' ? Math.floor(Math.random() * 2 ** 32) : parseInt(params.seed);
       return {
@@ -202,6 +202,7 @@ function Create() {
   const handleImageAction = async (action: string) => {
     switch (action) {
       case 'remix':
+      case 'remix-to-video':
         if (selectedImage) {
           const params: GenerateImageParams = {
             prompt: selectedImage.prompt,
@@ -214,11 +215,16 @@ function Create() {
             refImage: selectedImage.refImage || undefined,
             maskImage: selectedImage.maskImage || undefined,
           };
-
-          setGenerateParams((prev) => ({
-            ...prev,
-            ...params,
-          }));
+          if (action === 'remix-to-video' && !('duration' in selectedImage)){
+            params.refImage = selectedImage.url;
+            params.maskImage = undefined;
+            params.model = Object.values(videoModelMap)[0];
+            params.seed = 'random'
+            const remixParams: GenerateVideoParams = { ...params, duration:5}
+            setGenerateParams(remixParams);
+            return 
+          }
+          setGenerateParams(params);
         }
         break;
       case 'delete':
@@ -271,7 +277,7 @@ function Create() {
 
   const handleUpscaleImage = async (image: ImageData) => {
     const { width, height } = aspectRatioMap[image.aspectRatio ?? '4:3']
-    const imageUrl = generatePlaceholderImage('Upscaling...', '', width, height)
+    const imageUrl = generatePlaceholderImage('Upscaling Your Creation', 'One moment, magic is happening…', width, height)
     const newImage: ImageData = {
       ...image,
       id: undefined,

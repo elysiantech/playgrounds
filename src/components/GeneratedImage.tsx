@@ -1,15 +1,15 @@
 import React from 'react'
 import Image from 'next/image'
-import { X, Trash2, Download, Expand, EyeOff, Eye, WandSparkles, Info } from 'lucide-react'
+import { X, Trash2, Download, Expand, EyeOff, Eye, WandSparkles, Sparkles, Info, Play } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { ImageData } from '@/lib/types';
+import { ImageData, VideoData } from '@/lib/types';
 import { SharePopover } from '@/components/share'
 
 interface GeneratedImageProps {
-  selectedImage?: ImageData
+  selectedImage?: ImageData | VideoData
   onAction: (action: string) => void
   canBookmark: boolean
 }
@@ -17,11 +17,21 @@ interface GeneratedImageProps {
 export const GeneratedImage: React.FC<GeneratedImageProps> = ({ selectedImage, onAction, canBookmark=false }) => {
   const [showTools, setShowTools] = React.useState(false)
   const [showInfoPanel, setShowInfoPanel] = React.useState(false)
+  const isVideo = (selectedImage && 'duration' in selectedImage)
   
   const customLoader = ({ src, width, quality }: { src: string, width: number, quality?: number }) => {
     return `${src}?width=${Math.min(width, 1536)}&quality=${quality || 75}`;
   };
 
+  const PlaySparkles = () => {
+    return (
+      <div className="w-6 h-6">
+        
+        <Sparkles className="absolute" />
+        <Play className="absolute" />
+      </div>
+    );
+  };
   return (
     <div className="flex-1 p-4 flex items-center justify-center overflow-hidden" style={{ height: '100%'}}>
       <div
@@ -47,17 +57,12 @@ export const GeneratedImage: React.FC<GeneratedImageProps> = ({ selectedImage, o
                   <SharePopover url={`${window.location.origin}/images/${selectedImage.id}`} />
                   <TooltipProvider>
                     {[
-                      { icon: Expand, label: 'Super Resolution', action: 'aiExpand' },
-                      { icon: Download, label: 'Download', action: 'download' },
+                      ...(!isVideo? [{ icon: Play, label: 'Remix As Video', action:'remix-to-video'}]:[]),
                       { icon: WandSparkles, label: 'Remix', action: 'remix' },
+                      { icon: Expand, label: 'Enhance Resolution', action: 'aiExpand' },
+                      { icon: Download, label: 'Download', action: 'download' },
                       { icon: Info, label: 'Info', action: 'info' },
-                      ...(canBookmark
-                        ? [{ 
-                            icon: selectedImage.bookmark ? Eye : EyeOff, 
-                            label: selectedImage.bookmark ? 'Visible to Public' : 'Hidden From Public', 
-                            action: 'bookmark' 
-                          }]
-                        : []),
+                      ...(canBookmark? [{ icon: selectedImage.bookmark ? Eye : EyeOff, label: selectedImage.bookmark ? 'Visible to Public' : 'Hidden From Public', action: 'bookmark' }]: []),
                       { icon: Trash2, label: 'Delete', action: 'delete' },
                     ].map(({ icon: Icon, label, action }) => (
                       <Tooltip key={action}>

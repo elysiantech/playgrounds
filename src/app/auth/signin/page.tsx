@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Github, Mail } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
+import { Logo } from '@/components/Logo'
 
 export default function SignInPage() {
   return (
@@ -21,7 +22,12 @@ function SignIn() {
   const { theme } = useTheme()
   const searchParams = useSearchParams()
   const [callbackUrl, setCallbackUrl] = useState<string>('/');
-
+  const [mounted, setMounted] = useState(false);
+  
+    useEffect(() => {
+      setMounted(true);
+    }, []);
+    
   useEffect(() => {
     const queryCallbackUrl = searchParams?.get('callbackUrl');
     setCallbackUrl(queryCallbackUrl || '/');
@@ -30,13 +36,7 @@ function SignIn() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-background">
       <div className="mb-8">
-      <Image
-          src={theme === 'dark' ? '/logo-white-black.png' : '/logo-black-white.png'}
-          alt="Origam.ai Logo"
-          width={64}
-          height={64}
-          className="rounded-md"
-        />
+         {mounted && (<Logo theme={theme || 'light'} />)}
       </div>
       <Card className="w-[350px]">
         <CardHeader className="space-y-1">

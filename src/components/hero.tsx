@@ -61,7 +61,7 @@ export const Hero: React.FC<HeroProps> = ({ nextSectionRef }) => {
           className="space-x-4"
         >
           <button className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-full font-semibold text-lg transition-all duration-300 hover:scale-105 hover:shadow-lg"
-          onClick={()=> router.push('/playground')}
+          onClick={()=> router.push('/create')}
           >
             Start Creating
           </button>
