@@ -13,12 +13,12 @@ import { Slider } from '@/components/ui/slider'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Label } from '@/components/ui/label'
 
-import { GenerateImageParams, aspectRatios, imageModelMap, videoModelMap } from '@/lib/types';
+import { GenerateImageParams, GenerateVideoParams, aspectRatios, imageModelMap, videoModelMap } from '@/lib/types';
 import { useApi } from "@/hooks/use-api"
 
 interface FloatingToolbarProps {
-  params?: GenerateImageParams
-  onGenerate: (params: GenerateImageParams) => void
+  params?: GenerateImageParams | GenerateVideoParams
+  onGenerate: (params: GenerateImageParams | GenerateVideoParams) => void
 }
 
 const FloatingToolbar: React.FC<FloatingToolbarProps> = ({ params, onGenerate }) => {
@@ -42,23 +42,36 @@ const FloatingToolbar: React.FC<FloatingToolbarProps> = ({ params, onGenerate })
 
   // handle updating generation parameters
   React.useEffect(() => {
-    if (params) {
-      setPrompt(params.prompt!)
-      setModel(params.model)
-      setCreativity(params.creativity)
-      setSteps(params.steps)
-      if (params.seed !== 'random') {
-        setSeed('fixed')
-        setFixedSeed(params.seed)
-      }
-      setNumberOfImages(params.numberOfImages)
-      setAspectRatio(params.aspectRatio!)
-      // setRefImage(params.refImage!)
+    if (!params) return
+
+    setPrompt(params.prompt!)
+    setCreativity(params.creativity)
+    setSteps(params.steps)
+    setAspectRatio(params.aspectRatio!)
+
+    // Conditional handling for GenerateImageParams | GenerateVideoParams
+    const isVideoParams = ('duration' in params);
+    if (mode === 'video' && isVideoParams) {
+      setLength(params.duration!);
+      setModel(params.model);
+    } else if (mode === 'image' && !isVideoParams) {
+      setModel(params.model);
     }
+    
+    
+    if (params.seed !== 'random') {
+      setSeed('fixed')
+      setFixedSeed(params.seed)
+    }
+    
+    setNumberOfImages(params.numberOfImages)
+    setRefImage(params.refImage!)
+    setMaskImage(params.maskImage!)
+
   }, [params])
 
   const handleGenerate = () => {
-    const params: GenerateImageParams = {
+    const baseParams: GenerateImageParams = {
       prompt,
       aspectRatio,
       creativity,
@@ -68,8 +81,14 @@ const FloatingToolbar: React.FC<FloatingToolbarProps> = ({ params, onGenerate })
       steps,
       ...(refImage && { refImage }),
       ...(maskImage && { maskImage }),
+    } 
 
-    }
+    // Extend params for video mode
+    const params: GenerateImageParams | GenerateVideoParams =
+    mode === 'video'
+      ? { ...baseParams, duration: length }
+      : baseParams;
+
     setIsGenerating(true)
     onGenerate(params)
     setIsGenerating(false)
@@ -355,7 +374,7 @@ const FloatingToolbar: React.FC<FloatingToolbarProps> = ({ params, onGenerate })
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="relative">
-                  {refImage === null ? (
+                  {!refImage ? (
                     <Button
                       variant="outline"
                       onClick={handleImageUpload}

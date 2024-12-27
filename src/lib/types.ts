@@ -17,10 +17,6 @@ export interface ImageData {
   likes:number;
 }
 
-export interface VideoData extends ImageData {
-  duration?: number;
-};
-
 export interface Generation {
   images: ImageData[],
   createdAt: Date
@@ -41,6 +37,11 @@ export interface GenerateImageParams {
 export interface GenerateVideoParams extends GenerateImageParams {
   duration?: number;
 }
+
+export interface VideoData extends ImageData {
+  duration?: number;
+};
+
 
 interface AspectRatio {
   ratio: string;

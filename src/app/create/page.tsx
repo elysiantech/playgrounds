@@ -5,7 +5,7 @@ import { useTheme } from 'next-themes'
 import { useSearchParams } from 'next/navigation'
 import { toast } from '@/hooks/use-toast'
 import { useApi } from "@/hooks/use-api"
-import { ImageData, GenerateImageParams } from '@/lib/types';
+import { ImageData, GenerateImageParams, VideoData, GenerateVideoParams } from '@/lib/types';
 import { Header } from '@/components/header';
 import FloatingToolbar from '@/components/FloatingToolbar'
 import { GeneratedImage } from '@/components/GeneratedImage'
@@ -28,9 +28,9 @@ export default function CreatePage() {
 function Create() {
   const { setTheme } = useTheme()
   const searchParams = useSearchParams()
-  const [generateParams, setGenerateParams] = React.useState<GenerateImageParams | null>(null)
-  const [generatedImages, setGeneratedImages] = React.useState<ImageData[]>([])
-  const [selectedImage, setSelectedImage] = React.useState<ImageData | null>(null)
+  const [generateParams, setGenerateParams] = React.useState<GenerateImageParams | GenerateVideoParams | null>(null)
+  const [generatedImages, setGeneratedImages] = React.useState<ImageData[] | VideoData[]>([])
+  const [selectedImage, setSelectedImage] = React.useState<ImageData | VideoData | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [canBookmark, setCanBookmark] = React.useState(false);
   const [isExpandModalOpen, setIsExpandModalOpen] = useState(false)
@@ -126,7 +126,7 @@ function Create() {
     }
   }, [searchParams])
 
-  const handleGenerateImage = async (params: GenerateImageParams) => {
+  const handleGenerateImage = async (params: GenerateImageParams | GenerateVideoParams) => {
     const { width, height } = aspectRatioMap[params.aspectRatio ?? '4:3']
     const imageUrl = generatePlaceholderImage('Generating Magic...', 'almost there', width, height)
     const newImages: ImageData[] = Array.from({ length: params.numberOfImages }, () => {
@@ -152,11 +152,13 @@ function Create() {
       setGeneratedImages(prev => [...newImages, ...prev]);
       setSelectedImage(newImages[0]);
 
-      // Generate images using the useApi hook
-      const imageFunction = params.maskImage && params.refImage ? fillImage : generateImage; //generateVideo
+      // Generate images/video using the useApi hook
+      const imageFunction = params.maskImage && params.refImage ? fillImage : generateImage;
+      const isVideo = ('duration' in params);
+
       const generatedImages = await Promise.all(
-        newImages.map((image) =>
-          imageFunction({
+        newImages.map((image) => {
+          const baseParams = {
             prompt: image.prompt,
             model: image.model,
             creativity: image.creativity,
@@ -166,8 +168,11 @@ function Create() {
             refImage: image.refImage || undefined,
             maskImage: image.maskImage || undefined,
             numberOfImages: 1
-          })
-        ) 
+          }
+          if (!isVideo) 
+            return imageFunction(baseParams)
+          else return generateVideo({...baseParams, duration: params.duration})
+        })
       )
       
       // Update newImages with the generated URLs
@@ -182,7 +187,7 @@ function Create() {
       setGeneratedImages(prev => [...updatedImages, ...prev.slice(params.numberOfImages)]);
       setSelectedImage(updatedImages[0]);
     } catch (error) {
-      console.error('Error generating image:', error)
+      console.error('Error generating:', error)
       // Remove set placeholder images
       setGeneratedImages(prev => [...prev.slice(params.numberOfImages)]);
       setSelectedImage(null);
