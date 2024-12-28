@@ -18,10 +18,6 @@ export async function GET(req: NextRequest, { params }: {  params: Promise<{ id:
 
     // If width or height is specified, resize the image using sharp
     if (width || height) {
-      if (!contentType.startsWith("image/")) {
-        throw new Error("Requested file is not an image");
-      }
-
       const buffer = await streamToBuffer(stream);
 
       const resizedImage = await sharp(buffer)
@@ -31,6 +27,13 @@ export async function GET(req: NextRequest, { params }: {  params: Promise<{ id:
       const etag = `"${key}-${width || "original"}-${height || "original"}"`;
       return new NextResponse(resizedImage, { headers: {...headers, "Etag":etag}});
     }
+    if (!contentType.startsWith("image/")) {
+      // throw new Error("Requested file is not an image");
+      const buffer = await streamToBuffer(stream);
+      const etag = `"${key}-${width || "original"}-${height || "original"}"`;
+      return new NextResponse(buffer, { headers: {...headers, "Etag":etag}});
+    }
+
 
     return new NextResponse(stream as unknown as ReadableStream, { headers})
   } catch (error) {

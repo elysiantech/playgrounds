@@ -58,7 +58,7 @@ function Create() {
     if (savedTheme) {
       setTheme(savedTheme)
     }
-    getImages().then((images) => {
+    getImages({includeVideo:true}).then((images) => {
       const parsedImages = images.map((image) => {
         return { ...image, url: `${image.url}` }
       });

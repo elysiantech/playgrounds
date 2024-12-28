@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, forwardRef } from 'react'
 import Masonry from 'react-masonry-css';
-import { Heart } from "lucide-react"; // Replace with your heart icon
+import { Heart } from "lucide-react";
 import { useInView } from 'react-intersection-observer';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ImageData } from '@/lib/types'
@@ -30,10 +30,10 @@ export const MasonryGrid = forwardRef<HTMLElement, MasonryGridProps>(({ selected
   useEffect(() => {
     const fetchImages = async () => {
       try {
-        const allImages = await getImages(true); // Fetch all ImageData
+        const allImages = await getImages({isPublic:true, includeVideo:true}); // Fetch all ImageData
         const parsedImages = allImages.map((image, i) => ({
           ...image,
-          url: `/share/${image.url}`, // Adjust URL if necessary
+          url: `/share/${image.url}`, 
         }));
         setImages(parsedImages);
       } catch (error) {
@@ -99,6 +99,18 @@ const LazyImage: React.FC<LazyImageProps> = ({ image, index, hoveredIndex, setHo
     >
       {(inView || index < preloadCount)  && (
         <>
+        { image.url.endsWith('.mp4') ? (
+          <div className="relative transition-opacity duration-300 ease-in-out">
+            <video
+              src={image.url}
+              className="w-full h-auto"
+              loop
+              muted={true}
+              playsInline
+              autoPlay={hoveredIndex === index}
+            />
+          </div>
+        ):(
           <Image
             loader={customLoader}
             src={image.url}
@@ -107,7 +119,8 @@ const LazyImage: React.FC<LazyImageProps> = ({ image, index, hoveredIndex, setHo
             height={height}
             className="w-full h-auto object-cover transition-opacity duration-300 ease-in-out"
             style={{ opacity: hoveredIndex === index ? 0.7 : 1 }}
-          />
+          />)
+          }
           {hoveredIndex === index && (
             <>
             <div className="absolute inset-0 flex flex-col justify-between p-4 bg-black bg-opacity-50 transition-opacity duration-300 ease-in-out">

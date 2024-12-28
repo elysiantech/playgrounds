@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react';
-import { ImageData, GenerateImageParams, GenerateVideoParams } from '@/lib/types';
+import { ImageData, VideoData, GenerateImageParams, GenerateVideoParams } from '@/lib/types';
 
 interface GeneratedImage {
   id:string;
@@ -73,15 +73,14 @@ export function useApi() {
     return baseFetch<GeneratedImage>(`/api/images/${id}`, 'PATCH', updates);
   };
 
-  const getImages = async ( isPublic: boolean = false, offset?: number, limit?: number): Promise<ImageData[]> => {
+  const getImages = async (props:{isPublic?: boolean, includeVideo?:boolean}): Promise<ImageData[] | VideoData[]> => {
+    const {isPublic = false, includeVideo = false} = props;
     const query = new URLSearchParams();
-    if (offset) query.set('offset', offset.toString());
-    if (limit) query.set('limit', limit.toString());
-  
+    
     const apiRoute = isPublic ? `/api/public/images`: `/api/images`;
     const images = await baseFetch<ImageData[]>(apiRoute, 'GET');
     return images
-      .filter((image) => image.url && !image.url.endsWith('.mp4'))
+      .filter((image) => image.url && (!image.url.endsWith('.mp4') || includeVideo ) )
       .map((image) => ({
         id: image.id,
         url: image.url,

@@ -23,6 +23,43 @@ export const GeneratedImage: React.FC<GeneratedImageProps> = ({ selectedImage, o
     return `${src}?width=${Math.min(width, 1536)}&quality=${quality || 75}`;
   };
 
+  const videoRef = React.useRef<HTMLVideoElement>(null);
+  const [isScrubbing, setIsScrubbing] = React.useState(false);
+  const [startX, setStartX] =React.useState(0);
+  const [startTime, setStartTime] = React.useState(0);
+
+  const handleMouseDown = (event: React.MouseEvent) => {
+    if (!isVideo || !videoRef.current) return;
+    // Pause the video while scrubbing
+    videoRef.current.pause();
+
+    setIsScrubbing(true);
+    setStartX(event.clientX);
+    setStartTime(videoRef.current.currentTime);
+
+    // Prevent default behavior to avoid unwanted text selection
+    event.preventDefault();
+  };
+
+  const handleMouseMove = (event: React.MouseEvent) => {
+    if (!isScrubbing || !videoRef.current) return;
+
+    const deltaX = event.clientX - startX; // Calculate horizontal movement
+    const videoDuration = videoRef.current.duration;
+
+    // Adjust video playback time based on horizontal drag distance
+    const newTime = Math.min(
+      Math.max(startTime + deltaX / 20, 0), 
+      videoDuration
+    );
+    videoRef.current.currentTime = newTime;
+  };
+
+  const handleMouseUp = () => {
+    if (!isScrubbing || !videoRef.current) return;
+    setIsScrubbing(false);
+  };
+
   const PlaySparkles = () => {
     return (
       <div className="w-6 h-6">
@@ -38,10 +75,25 @@ export const GeneratedImage: React.FC<GeneratedImageProps> = ({ selectedImage, o
         className="relative max-w-full max-h-full flex items-center justify-center"
         style={{ height: '100%', width: '100%' }}
         onMouseEnter={() => setShowTools(true)}
-        onMouseLeave={() => setShowTools(false)}
+        onMouseLeave={() => {setShowTools(false); handleMouseUp();}}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        
       >
         {selectedImage ? (
           <div className="relative w-full h-full max-w-full max-h-full overflow-hidden" style={{ height: '100%' }}>
+            { isVideo ? (
+              <video
+              ref={videoRef}
+              src={`/share/${selectedImage.url}`}
+              className="object-contain w-full h-full rounded-lg shadow-lg border"
+              loop
+              muted
+              playsInline
+              autoPlay
+              />
+            ):(
             <Image
               loader={customLoader}
               src={selectedImage.url.startsWith('data:image')? selectedImage.url: `/share/${selectedImage.url}`}
@@ -51,15 +103,20 @@ export const GeneratedImage: React.FC<GeneratedImageProps> = ({ selectedImage, o
               sizes="100vw"
               priority
             />
+            )}
             {showTools && selectedImage && (
               <>
                 <div className="absolute top-2 right-2 bg-background/40 backdrop-blur-md rounded-lg p-2 flex space-x-2">
                   <SharePopover url={`${window.location.origin}/images/${selectedImage.id}`} />
                   <TooltipProvider>
                     {[
-                      ...(!isVideo? [{ icon: Play, label: 'Remix As Video', action:'remix-to-video'}]:[]),
-                      { icon: WandSparkles, label: 'Remix', action: 'remix' },
-                      { icon: Expand, label: 'Enhance Resolution', action: 'aiExpand' },
+                      ...(!isVideo? [
+                        { icon: Play, label: 'Remix As Video', action:'remix-to-video'},
+                        { icon: WandSparkles, label: 'Remix', action: 'remix' },
+                        { icon: Expand, label: 'Enhance Resolution', action: 'aiExpand' },
+                      ]:[
+                        { icon: WandSparkles, label: 'Remix', action: 'remix' },
+                      ]),
                       { icon: Download, label: 'Download', action: 'download' },
                       { icon: Info, label: 'Info', action: 'info' },
                       ...(canBookmark? [{ icon: selectedImage.bookmark ? Eye : EyeOff, label: selectedImage.bookmark ? 'Visible to Public' : 'Hidden From Public', action: 'bookmark' }]: []),

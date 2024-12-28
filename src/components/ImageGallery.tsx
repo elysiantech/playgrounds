@@ -1,11 +1,12 @@
 import React from 'react'
 import Image from 'next/image'
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area'
-import { ImageData } from '@/lib/types';
+import { Heart, Trash2 } from "lucide-react";
+import { ImageData, VideoData } from '@/lib/types';
 
 interface ImageGalleryProps {
-  generatedImages: ImageData[];
-  onImageSelect: (image: ImageData) => void;
+  generatedImages: ImageData[] | VideoData[];
+  onImageSelect: (image: ImageData | VideoData) => void;
   direction?: 'horizontal' | 'vertical'; // New prop to control direction
 }
 
@@ -33,6 +34,23 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ generatedImages, onI
         >
           {generatedImages.map((image, index) => (
             <div key={index} className="relative group flex-shrink-0">
+               { image.url.endsWith('.mp4') ? (
+                <div className="rounded-md cursor-pointer hover:opacity-80 transition-opacity"
+                onClick={() => onImageSelect({...image, duration:5})}
+                style={{
+                  height: isHorizontal ? `${gallerySize}px` : 'auto',
+                  width: isHorizontal ? 'auto' : `${gallerySize}px`,
+                }}
+                >
+                <video
+                  src={`/share/${image.url}`}
+                  className="w-full h-auto"
+                  loop
+                  muted={true}
+                  playsInline
+                  />
+                </div>
+              ):(
               <Image
                 loader={customLoader}
                 src={image.url.startsWith('data:image') ? image.url : `/share/${image.url}`}
@@ -46,6 +64,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({ generatedImages, onI
                   width: isHorizontal ? 'auto' : `${gallerySize}px`,
                 }}
               />
+              )}
             </div>
           ))}
         </div>
