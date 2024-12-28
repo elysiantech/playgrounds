@@ -49,7 +49,7 @@ export const GeneratedImage: React.FC<GeneratedImageProps> = ({ selectedImage, o
 
     // Adjust video playback time based on horizontal drag distance
     const newTime = Math.min(
-      Math.max(startTime + deltaX / 20, 0), 
+      Math.max(startTime + deltaX / 10, 0), 
       videoDuration
     );
     videoRef.current.currentTime = newTime;
@@ -58,6 +58,7 @@ export const GeneratedImage: React.FC<GeneratedImageProps> = ({ selectedImage, o
   const handleMouseUp = () => {
     if (!isScrubbing || !videoRef.current) return;
     setIsScrubbing(false);
+    videoRef.current.play();
   };
 
   const PlaySparkles = () => {
