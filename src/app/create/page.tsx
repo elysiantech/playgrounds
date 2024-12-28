@@ -339,13 +339,13 @@ function Create() {
     }));
   }
 
-  const handleDeleteImage = async (imageToDelete: ImageData) => {
+  const handleDeleteImage = async (imageToDelete: ImageData | VideoData) => {
     try {
       await deleteImage(imageToDelete.id!);
       setGeneratedImages(prev => prev.filter(img => img.id !== imageToDelete.id))
       if (selectedImage && selectedImage.id === imageToDelete.id) {
         let nextImage = null;
-        generatedImages.forEach((image: ImageData, index: number) => {
+        generatedImages.forEach((image: ImageData | VideoData, index: number) => {
           if (image.id === imageToDelete.id) {
             nextImage = (index + 1) <= generatedImages.length ? generatedImages[index + 1] : null
             return;
@@ -397,11 +397,11 @@ function Create() {
       <Header />
       </div>
       <div className="flex-grow flex overflow-hidden" style={{ height: `calc(100vh - ${toolbarHeight + headerHeight}px)` }}>
-        <div className="flex-grow overflow-auto">
+        <div className="flex-grow overflow-hidden relative">
           <GeneratedImage selectedImage={selectedImage!} onAction={handleImageAction} canBookmark={false} />
-          {selectedImage ? (
+          {selectedImage && (
             <ImageNavigation images={generatedImages} selectedImage={selectedImage} setSelectedImage={setSelectedImage} />)
-            : (null)}
+          }
         </div>
         <div className="mt-4 mb-4 border rounded-lg overflow-auto">
           <ImageGallery generatedImages={generatedImages} onImageSelect={setSelectedImage} direction="vertical" />

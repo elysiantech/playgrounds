@@ -17,7 +17,7 @@ interface GeneratedImageProps {
 export const GeneratedImage: React.FC<GeneratedImageProps> = ({ selectedImage, onAction, canBookmark=false }) => {
   const [showTools, setShowTools] = React.useState(false)
   const [showInfoPanel, setShowInfoPanel] = React.useState(false)
-  const isVideo = (selectedImage && 'duration' in selectedImage)
+  const isVideo = selectedImage && (('duration' in selectedImage) || selectedImage.url.endsWith('.mp4'))
   
   const customLoader = ({ src, width, quality }: { src: string, width: number, quality?: number }) => {
     return `${src}?width=${Math.min(width, 1536)}&quality=${quality || 75}`;

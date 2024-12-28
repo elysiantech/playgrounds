@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import InteractiveImage from "./interactive";
-import { ImageData } from '@/lib/types'
+import { ImageData, VideoData } from '@/lib/types'
 
 interface MetadataProps {
     params: Promise<{ id: string }>;
@@ -15,35 +15,36 @@ export async function generateMetadata({ params }: MetadataProps) {
     }
     const { user } = image
     const metadata = {
-        title: `Shared on Origam.ai by ${user.name}`,
-        description: `Explore the unique image generated from a text prompt. ID: ${id}`,
+        title: `Check out this creation by ${user.name}`,
+        description: `Discover this unique artwork generated with AI. Explore more creations and share your own!`,
         image: `${process.env.NEXTAUTH_URL}/share/${image.url}`,
-    };
+        url: `${process.env.NEXTAUTH_URL}/share/${id}`,
+      };
 
-    return {
+      return {
         title: metadata.title,
         description: metadata.description,
         openGraph: {
-            type: 'website',
-            title: metadata.title,
-            description: metadata.description,
-            url: metadata.image,
-            images: [
-                {
-                    url: metadata.image,
-                    width: 1200,
-                    height: 630,
-                    alt: metadata.title,
-                },
-            ],
+          type: 'website',
+          title: metadata.title,
+          description: metadata.description,
+          url: metadata.url,
+          images: [
+            {
+              url: metadata.image,
+              width: 1200,
+              height: 630,
+              alt: metadata.title,
+            },
+          ],
         },
         twitter: {
-            card: 'summary_large_image',
-            title: metadata.title,
-            description: metadata.description,
-            images: [metadata.image],
+          card: 'summary_large_image',
+          title: metadata.title,
+          description: metadata.description,
+          images: [metadata.image],
         },
-    };
+      };
 }
 
 // Server Component
