@@ -1,4 +1,5 @@
 # Playgrounds App
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/elysiantech/playgrounds)
 
 Playgrounds is an interactive application that enables users to generate, manage, and enhance images with advanced customization tools.
 
